@@ -44,7 +44,12 @@
                 <tbody id="table-global"></tbody>
             </table>
         </div>
-        <p class="mt-2 text-small">* Drivers who did not finish the race (DNF) are excluded from stats.</p>
+        
+        <div class="mt-3 text-muted text-small">
+            <p class="mb-1">* Drivers who did not finish the race (DNF) are excluded from stats.</p>
+            <p class="mb-1">* The Nordschleife (Nürburgring 24h) race has been excluded from the 'Avg Gap to Leader' stat due to its unusually long lap time.</p>
+            <p class="mb-0">* 'Incidents' are calculated as the number of completed laps that fall outside 107% of the session's overall best lap (including pitstops/off-tracks).</p>
+        </div>
     </div>
 
     <div id="view-session" class="card p-3 d-none">
@@ -59,8 +64,10 @@
                     <tr>
                         <th>Pos</th>
                         <th>Driver</th>
+                        <th>Car</th>
                         <th>Points</th>
                         <th>Laps</th>
+                        <th>Incidents</th>
                         <th>Avg Lap Time</th>
                         <th>Pace Gap</th>
                         <th>Best Lap</th>
@@ -77,7 +84,22 @@
 <script>
     let fullData = null;
 
-    // Añadimos ?v= y la hora actual para obligar a descargar el archivo nuevo
+    // Diccionario con las IDs de los coches de ACC
+    const carNames = {
+        0: "Porsche 991 GT3 R", 1: "Mercedes-AMG GT3", 2: "Ferrari 488 GT3", 3: "Audi R8 LMS",
+        4: "Lamborghini Huracan GT3", 5: "McLaren 650S GT3", 6: "Nissan GT-R Nismo GT3 '18",
+        7: "BMW M6 GT3", 8: "Bentley Continental GT3 '18", 9: "Porsche 991.2 GT3 Cup",
+        10: "Nissan GT-R Nismo GT3 '15", 11: "Bentley Continental GT3 '15", 12: "Aston Martin V12 Vantage GT3",
+        13: "Reiter Gallardo R-EX", 14: "Emil Frey Jaguar G3", 15: "Lexus RC F GT3",
+        16: "Lamborghini Huracan ST", 17: "Honda NSX GT3", 18: "Lamborghini Huracan GT3 Evo",
+        19: "Audi R8 LMS Evo", 20: "Aston Martin V8 Vantage GT3", 21: "Honda NSX GT3 Evo",
+        22: "McLaren 720S GT3", 23: "Porsche 911 GT3 R (991.2)", 24: "Ferrari 488 GT3 Evo",
+        25: "Mercedes-AMG GT3 '20", 26: "Ferrari 488 Challenge Evo", 27: "BMW M2 CS Racing",
+        28: "Porsche 911 GT3 Cup (992)", 29: "Lamborghini Huracan ST EVO2", 30: "BMW M4 GT3",
+        31: "Audi R8 LMS Evo II", 32: "Ferrari 296 GT3", 33: "Lamborghini Huracan GT3 Evo2",
+        34: "Porsche 911 GT3 R (992)", 35: "McLaren 720S GT3 Evo", 36: "Ford Mustang GT3"
+    };
+
     fetch('dashboard_data.json?v=' + new Date().getTime())
         .then(response => response.json())
         .then(data => {
@@ -87,7 +109,6 @@
         .catch(err => console.error("Error loading JSON:", err));
 
     function initDashboard() {
-        // 1. Populate Global
         const tGlobal = document.getElementById('table-global');
         fullData.global.forEach((p, index) => {
             tGlobal.innerHTML += `
@@ -102,7 +123,6 @@
             `;
         });
 
-        // 2. Populate Dropdown
         const selector = document.getElementById('viewSelector');
         fullData.sessions.forEach((session, index) => {
             const option = document.createElement('option');
@@ -137,13 +157,17 @@
         session.results.forEach(r => {
             const stylePace = r.gap_pace.includes('+') ? 'gap-plus' : 'gap-ref';
             const styleBest = r.gap_best.includes('+') ? 'gap-plus' : 'gap-ref';
+            
+            const nombreCoche = carNames[r.car_model] || `Unknown Car (${r.car_model})`;
 
             tbody.innerHTML += `
                 <tr>
                     <td>${r.pos}</td>
                     <td>${r.name}</td>
+                    <td><small class="text-muted">${nombreCoche}</small></td>
                     <td class="fw-bold">${r.points}</td>
                     <td>${r.laps}</td>
+                    <td>${r.incidents}</td>
                     <td>${r.avg_time}</td>
                     <td class="${stylePace}">${r.gap_pace}</td>
                     <td>${r.best_lap}</td>

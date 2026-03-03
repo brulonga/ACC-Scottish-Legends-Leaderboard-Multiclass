@@ -1,27 +1,35 @@
 {
   "global": [
     {
+      "name": "Dominic [LZRT] Zimmermann",
+      "points": 390,
+      "avg_points": 130.0,
+      "avg_pos": 2.7,
+      "avg_gap": "+1.680",
+      "races": 3
+    },
+    {
       "name": "Biggie Smalls",
       "points": 330,
       "avg_points": 165.0,
       "avg_pos": 1.5,
-      "avg_gap": "+0.179",
+      "avg_gap": "+0.000",
       "races": 2
     },
     {
-      "name": "Dominic [LZRT] Zimmermann",
-      "points": 240,
-      "avg_points": 120.0,
-      "avg_pos": 3.0,
-      "avg_gap": "+3.646",
-      "races": 2
+      "name": "Bruno Longarela",
+      "points": 273,
+      "avg_points": 91.0,
+      "avg_pos": 6.0,
+      "avg_gap": "+1.880",
+      "races": 3
     },
     {
-      "name": "Robert [LZRT]Olsson",
+      "name": "Marsi Bella [RRT]",
       "points": 180,
       "avg_points": 180.0,
       "avg_pos": 1.0,
-      "avg_gap": "+0.660",
+      "avg_gap": "+0.000",
       "races": 1
     },
     {
@@ -29,15 +37,31 @@
       "points": 180,
       "avg_points": 90.0,
       "avg_pos": 6.0,
-      "avg_gap": "+4.067",
+      "avg_gap": "+1.828",
       "races": 2
     },
     {
-      "name": "Bruno Longarela",
-      "points": 168,
-      "avg_points": 84.0,
-      "avg_pos": 7.0,
-      "avg_gap": "+6.716",
+      "name": "Marty Fox",
+      "points": 180,
+      "avg_points": 90.0,
+      "avg_pos": 6.0,
+      "avg_gap": "+3.108",
+      "races": 2
+    },
+    {
+      "name": "Robert [LZRT]Olsson",
+      "points": 180,
+      "avg_points": 180.0,
+      "avg_pos": 1.0,
+      "avg_gap": "-",
+      "races": 1
+    },
+    {
+      "name": "Bence Kamaras",
+      "points": 174,
+      "avg_points": 87.0,
+      "avg_pos": 6.5,
+      "avg_gap": "+2.173",
       "races": 2
     },
     {
@@ -45,15 +69,15 @@
       "points": 150,
       "avg_points": 150.0,
       "avg_pos": 2.0,
-      "avg_gap": "+0.000",
+      "avg_gap": "+0.051",
       "races": 1
     },
     {
-      "name": "Nick [LZRT] Ice",
-      "points": 105,
-      "avg_points": 105.0,
-      "avg_pos": 4.0,
-      "avg_gap": "+0.267",
+      "name": "Tanno Raayman",
+      "points": 120,
+      "avg_points": 120.0,
+      "avg_pos": 3.0,
+      "avg_gap": "+2.035",
       "races": 1
     },
     {
@@ -61,7 +85,15 @@
       "points": 105,
       "avg_points": 105.0,
       "avg_pos": 4.0,
-      "avg_gap": "+1.923",
+      "avg_gap": "+1.496",
+      "races": 1
+    },
+    {
+      "name": "Nick [LZRT] Ice",
+      "points": 105,
+      "avg_points": 105.0,
+      "avg_pos": 4.0,
+      "avg_gap": "-",
       "races": 1
     },
     {
@@ -69,15 +101,7 @@
       "points": 96,
       "avg_points": 96.0,
       "avg_pos": 5.0,
-      "avg_gap": "+6.540",
-      "races": 1
-    },
-    {
-      "name": "Marty Fox",
-      "points": 90,
-      "avg_points": 90.0,
-      "avg_pos": 6.0,
-      "avg_gap": "+12.290",
+      "avg_gap": "-",
       "races": 1
     },
     {
@@ -85,23 +109,15 @@
       "points": 84,
       "avg_points": 84.0,
       "avg_pos": 7.0,
-      "avg_gap": "+2.738",
+      "avg_gap": "+3.146",
       "races": 1
     },
     {
-      "name": "Bence Kamaras",
-      "points": 78,
-      "avg_points": 78.0,
-      "avg_pos": 8.0,
-      "avg_gap": "+0.993",
-      "races": 1
-    },
-    {
-      "name": "Jun-Yi Ho",
-      "points": 72,
-      "avg_points": 72.0,
-      "avg_pos": 9.0,
-      "avg_gap": "+13.997",
+      "name": "Nad Meyn",
+      "points": 84,
+      "avg_points": 84.0,
+      "avg_pos": 7.0,
+      "avg_gap": "+5.536",
       "races": 1
     },
     {
@@ -109,15 +125,15 @@
       "points": 72,
       "avg_points": 72.0,
       "avg_pos": 9.0,
-      "avg_gap": "+1.120",
+      "avg_gap": "+0.713",
       "races": 1
     },
     {
-      "name": "Batuhan Demirel",
-      "points": 66,
-      "avg_points": 66.0,
-      "avg_pos": 10.0,
-      "avg_gap": "+15.010",
+      "name": "Jun-Yi Ho",
+      "points": 72,
+      "avg_points": 72.0,
+      "avg_pos": 9.0,
+      "avg_gap": "-",
       "races": 1
     },
     {
@@ -125,7 +141,15 @@
       "points": 66,
       "avg_points": 66.0,
       "avg_pos": 10.0,
-      "avg_gap": "+3.805",
+      "avg_gap": "+4.646",
+      "races": 1
+    },
+    {
+      "name": "Batuhan Demirel",
+      "points": 66,
+      "avg_points": 66.0,
+      "avg_pos": 10.0,
+      "avg_gap": "-",
       "races": 1
     },
     {
@@ -141,7 +165,7 @@
       "points": 57,
       "avg_points": 57.0,
       "avg_pos": 12.0,
-      "avg_gap": "+34.287",
+      "avg_gap": "-",
       "races": 1
     },
     {
@@ -149,7 +173,7 @@
       "points": 54,
       "avg_points": 54.0,
       "avg_pos": 13.0,
-      "avg_gap": "+5.777",
+      "avg_gap": "-",
       "races": 1
     }
   ],
@@ -161,130 +185,156 @@
         {
           "pos": 1,
           "name": "Robert [LZRT]Olsson",
+          "car_model": 32,
           "points": 180,
           "laps": 11,
-          "avg_time": "8:55.758",
-          "gap_pace": "PACE REF",
+          "incidents": 3,
+          "avg_time": "8:34.787",
+          "gap_pace": "+5.382",
           "best_lap": "8:20.485",
           "gap_best": "+0.660"
         },
         {
           "pos": 2,
           "name": "Biggie Smalls",
+          "car_model": 32,
           "points": 150,
           "laps": 11,
-          "avg_time": "9:02.548",
-          "gap_pace": "+6.790",
+          "incidents": 6,
+          "avg_time": "8:32.735",
+          "gap_pace": "+3.329",
           "best_lap": "8:19.825",
           "gap_best": "BEST LAP"
         },
         {
           "pos": 3,
           "name": "Dominic [LZRT] Zimmermann",
+          "car_model": 30,
           "points": 120,
           "laps": 11,
-          "avg_time": "9:04.469",
-          "gap_pace": "+8.710",
+          "incidents": 7,
+          "avg_time": "8:29.405",
+          "gap_pace": "PACE REF",
           "best_lap": "8:24.542",
           "gap_best": "+4.717"
         },
         {
           "pos": 4,
           "name": "Nick [LZRT] Ice",
+          "car_model": 30,
           "points": 105,
           "laps": 11,
-          "avg_time": "9:04.769",
-          "gap_pace": "+9.011",
+          "incidents": 3,
+          "avg_time": "8:34.147",
+          "gap_pace": "+4.742",
           "best_lap": "8:20.092",
           "gap_best": "+0.267"
         },
         {
           "pos": 5,
           "name": "Nickolay Semak",
+          "car_model": 34,
           "points": 96,
           "laps": 11,
-          "avg_time": "9:18.896",
-          "gap_pace": "+23.137",
+          "incidents": 7,
+          "avg_time": "8:37.777",
+          "gap_pace": "+8.372",
           "best_lap": "8:26.365",
           "gap_best": "+6.540"
         },
         {
           "pos": 6,
           "name": "Marty Fox",
+          "car_model": 35,
           "points": 90,
           "laps": 11,
-          "avg_time": "9:21.416",
-          "gap_pace": "+25.657",
+          "incidents": 5,
+          "avg_time": "8:42.383",
+          "gap_pace": "+12.977",
           "best_lap": "8:32.115",
           "gap_best": "+12.290"
         },
         {
           "pos": 7,
           "name": "Wojtek Bogdanowicz",
+          "car_model": 32,
           "points": 84,
           "laps": 11,
-          "avg_time": "9:26.100",
-          "gap_pace": "+30.341",
+          "incidents": 5,
+          "avg_time": "8:36.732",
+          "gap_pace": "+7.327",
           "best_lap": "8:26.162",
           "gap_best": "+6.337"
         },
         {
           "pos": 8,
           "name": "Bruno Longarela",
+          "car_model": 35,
           "points": 78,
           "laps": 11,
-          "avg_time": "9:32.869",
-          "gap_pace": "+37.111",
+          "incidents": 8,
+          "avg_time": "8:37.394",
+          "gap_pace": "+7.989",
           "best_lap": "8:30.967",
           "gap_best": "+11.142"
         },
         {
           "pos": 9,
           "name": "Jun-Yi Ho",
+          "car_model": 32,
           "points": 72,
           "laps": 11,
-          "avg_time": "9:36.911",
-          "gap_pace": "+41.153",
+          "incidents": 7,
+          "avg_time": "8:35.592",
+          "gap_pace": "+6.187",
           "best_lap": "8:33.822",
           "gap_best": "+13.997"
         },
         {
           "pos": 10,
           "name": "Batuhan Demirel",
+          "car_model": 30,
           "points": 66,
           "laps": 10,
-          "avg_time": "9:22.891",
-          "gap_pace": "+27.133",
+          "incidents": 6,
+          "avg_time": "8:39.656",
+          "gap_pace": "+10.250",
           "best_lap": "8:34.835",
           "gap_best": "+15.010"
         },
         {
           "pos": 11,
           "name": "Edwin Vos",
+          "car_model": 32,
           "points": 60,
           "laps": 10,
-          "avg_time": "10:18.641",
-          "gap_pace": "+82.882",
+          "incidents": 7,
+          "avg_time": "8:50.579",
+          "gap_pace": "+21.173",
           "best_lap": "-",
           "gap_best": "-"
         },
         {
           "pos": 12,
           "name": "Ryan mouse driver 95",
+          "car_model": 36,
           "points": 57,
           "laps": 9,
-          "avg_time": "9:48.674",
-          "gap_pace": "+52.915",
+          "incidents": 6,
+          "avg_time": "8:37.552",
+          "gap_pace": "+8.147",
           "best_lap": "8:54.112",
           "gap_best": "+34.287"
         },
         {
           "pos": 13,
           "name": "Karl Pfretzsch",
+          "car_model": 32,
           "points": 54,
           "laps": 7,
-          "avg_time": "9:57.031",
-          "gap_pace": "+61.273",
+          "incidents": 3,
+          "avg_time": "8:42.061",
+          "gap_pace": "+12.655",
           "best_lap": "8:25.602",
           "gap_best": "+5.777"
         }
@@ -297,9 +347,11 @@
         {
           "pos": 1,
           "name": "Biggie Smalls",
+          "car_model": 32,
           "points": 180,
           "laps": 44,
-          "avg_time": "2:05.392",
+          "incidents": 2,
+          "avg_time": "2:04.104",
           "gap_pace": "PACE REF",
           "best_lap": "2:02.385",
           "gap_best": "+0.358"
@@ -307,92 +359,200 @@
         {
           "pos": 2,
           "name": "Livio Maspoli",
+          "car_model": 32,
           "points": 150,
           "laps": 44,
-          "avg_time": "2:05.986",
-          "gap_pace": "+0.595",
+          "incidents": 1,
+          "avg_time": "2:04.154",
+          "gap_pace": "+0.051",
           "best_lap": "2:02.027",
           "gap_best": "BEST LAP"
         },
         {
           "pos": 3,
           "name": "Dominic [LZRT] Zimmermann",
+          "car_model": 30,
           "points": 120,
           "laps": 43,
-          "avg_time": "2:08.239",
-          "gap_pace": "+2.848",
+          "incidents": 3,
+          "avg_time": "2:06.075",
+          "gap_pace": "+1.971",
           "best_lap": "2:04.602",
           "gap_best": "+2.575"
         },
         {
           "pos": 4,
           "name": "Jason Clarke",
+          "car_model": 35,
           "points": 105,
           "laps": 42,
-          "avg_time": "2:09.359",
-          "gap_pace": "+3.968",
+          "incidents": 2,
+          "avg_time": "2:05.600",
+          "gap_pace": "+1.496",
           "best_lap": "2:03.950",
           "gap_best": "+1.923"
         },
         {
           "pos": 5,
           "name": "Wojtek Bogdanowicz",
+          "car_model": 32,
           "points": 96,
           "laps": 42,
-          "avg_time": "2:14.117",
-          "gap_pace": "+8.726",
+          "incidents": 8,
+          "avg_time": "2:05.932",
+          "gap_pace": "+1.828",
           "best_lap": "2:03.825",
           "gap_best": "+1.798"
         },
         {
           "pos": 6,
           "name": "Bruno Longarela",
+          "car_model": 36,
           "points": 90,
           "laps": 41,
-          "avg_time": "2:16.080",
-          "gap_pace": "+10.688",
+          "incidents": 10,
+          "avg_time": "2:06.285",
+          "gap_pace": "+2.181",
           "best_lap": "2:04.317",
           "gap_best": "+2.290"
         },
         {
           "pos": 7,
           "name": "Karl Zwiebel",
+          "car_model": 34,
           "points": 84,
           "laps": 40,
-          "avg_time": "2:18.874",
-          "gap_pace": "+13.482",
+          "incidents": 13,
+          "avg_time": "2:07.250",
+          "gap_pace": "+3.146",
           "best_lap": "2:04.765",
           "gap_best": "+2.738"
         },
         {
           "pos": 8,
           "name": "Bence Kamaras",
+          "car_model": 34,
           "points": 78,
           "laps": 38,
-          "avg_time": "2:25.324",
-          "gap_pace": "+19.933",
+          "incidents": 6,
+          "avg_time": "2:05.837",
+          "gap_pace": "+1.734",
           "best_lap": "2:03.020",
           "gap_best": "+0.993"
         },
         {
           "pos": 9,
           "name": "Alan Macleod",
+          "car_model": 35,
           "points": 72,
           "laps": 37,
-          "avg_time": "2:26.740",
-          "gap_pace": "+21.348",
+          "incidents": 8,
+          "avg_time": "2:04.816",
+          "gap_pace": "+0.713",
           "best_lap": "2:03.147",
           "gap_best": "+1.120"
         },
         {
           "pos": 10,
           "name": "Viktor Ruga",
+          "car_model": 30,
           "points": 66,
           "laps": 35,
-          "avg_time": "2:39.194",
-          "gap_pace": "+33.802",
+          "incidents": 13,
+          "avg_time": "2:08.750",
+          "gap_pace": "+4.646",
           "best_lap": "2:05.832",
           "gap_best": "+3.805"
+        }
+      ]
+    },
+    {
+      "id": "race_2",
+      "name": "Round 3: Hungaroring",
+      "results": [
+        {
+          "pos": 1,
+          "name": "Marsi Bella [RRT]",
+          "car_model": 35,
+          "points": 180,
+          "laps": 52,
+          "incidents": 1,
+          "avg_time": "1:44.701",
+          "gap_pace": "PACE REF",
+          "best_lap": "1:43.827",
+          "gap_best": "BEST LAP"
+        },
+        {
+          "pos": 2,
+          "name": "Dominic [LZRT] Zimmermann",
+          "car_model": 30,
+          "points": 150,
+          "laps": 52,
+          "incidents": 2,
+          "avg_time": "1:46.090",
+          "gap_pace": "+1.388",
+          "best_lap": "1:44.982",
+          "gap_best": "+1.155"
+        },
+        {
+          "pos": 3,
+          "name": "Tanno Raayman",
+          "car_model": 20,
+          "points": 120,
+          "laps": 51,
+          "incidents": 3,
+          "avg_time": "1:46.736",
+          "gap_pace": "+2.035",
+          "best_lap": "1:45.365",
+          "gap_best": "+1.538"
+        },
+        {
+          "pos": 4,
+          "name": "Bruno Longarela",
+          "car_model": 36,
+          "points": 105,
+          "laps": 51,
+          "incidents": 5,
+          "avg_time": "1:46.279",
+          "gap_pace": "+1.578",
+          "best_lap": "1:44.975",
+          "gap_best": "+1.148"
+        },
+        {
+          "pos": 5,
+          "name": "Bence Kamaras",
+          "car_model": 35,
+          "points": 96,
+          "laps": 51,
+          "incidents": 3,
+          "avg_time": "1:47.313",
+          "gap_pace": "+2.612",
+          "best_lap": "1:45.420",
+          "gap_best": "+1.593"
+        },
+        {
+          "pos": 6,
+          "name": "Marty Fox",
+          "car_model": 20,
+          "points": 90,
+          "laps": 50,
+          "incidents": 5,
+          "avg_time": "1:47.810",
+          "gap_pace": "+3.108",
+          "best_lap": "1:46.525",
+          "gap_best": "+2.698"
+        },
+        {
+          "pos": 7,
+          "name": "Nad Meyn",
+          "car_model": 3,
+          "points": 84,
+          "laps": 50,
+          "incidents": 17,
+          "avg_time": "1:50.238",
+          "gap_pace": "+5.536",
+          "best_lap": "1:48.995",
+          "gap_best": "+5.168"
         }
       ]
     }
