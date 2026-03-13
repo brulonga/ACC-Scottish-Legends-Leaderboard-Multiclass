@@ -6,8 +6,7 @@ import os
 JSON_FOLDER = "session_results"
 OUTPUT_FILE = "dashboard_data.json"
 
-# Minimum Laps Percentage to be classified (e.g. 0.50 = 50% of leader's laps)
-MIN_LAPS_PERCENTAGE = 0.50 
+MIN_LAPS_PERCENTAGE = 0.70 
 
 POINTS_SYSTEM = {
     1: 180, 2: 150, 3: 120, 4: 105, 5: 96,
@@ -19,7 +18,6 @@ POINTS_SYSTEM = {
 }
 
 def format_time(ms):
-    """Converts milliseconds to mm:ss.ms"""
     if ms is None or ms == 0 or ms > 2000000000: 
         return "-"
     minutes = int(ms // 60000)
@@ -35,7 +33,6 @@ def load_and_process():
     files.sort(key=os.path.getmtime) 
 
     for file_index, file_path in enumerate(files):
-        # 1. Robust File Reading
         data = None
         encodings = ['utf-8-sig', 'utf-16-le', 'utf-16', 'latin-1', 'cp1252']
         for encoding in encodings:
@@ -47,48 +44,51 @@ def load_and_process():
                 continue
 
         if data is None or 'sessionResult' not in data:
-            print(f"⚠️ Warning: Skipping {os.path.basename(file_path)}")
+            continue
+            
+        session_type = data.get('sessionType', 'R')
+        if session_type not in ['R', 'R1', 'R2']: 
             continue
 
         track_name = data.get('trackName', 'Unknown Track')
         leaderboard = data['sessionResult']['leaderBoardLines']
         
-        # --- 2. SESSION ANALYSIS ---
         session_best_lap = float('inf')
         max_laps_session = 0
 
-        # Find max laps done by the winner & Absolute Best Lap of the session
         for line in leaderboard:
             timing = line['timing']
             if timing['lapCount'] > max_laps_session:
                 max_laps_session = timing['lapCount']
-            
             if timing['bestLap'] < 2000000000 and timing['bestLap'] < session_best_lap:
                 session_best_lap = timing['bestLap']
 
         min_laps_required = max_laps_session * MIN_LAPS_PERCENTAGE
         threshold_107 = session_best_lap * 1.07 if session_best_lap != float('inf') else 0
 
-        # Process individual laps for 107% pace rule and incident counting
         car_laps_data = {}
         for lap in data.get('laps', []):
             cid = lap['carId']
             ltime = lap['laptime']
             if cid not in car_laps_data:
-                car_laps_data[cid] = {'valid_laps': [], 'incidents': 0}
+                car_laps_data[cid] = {'valid_laps': [], 'incidents': 0, 'all_laps': []}
             
             if ltime < 2000000000:
-                if threshold_107 > 0 and ltime <= threshold_107:
+                is_incident = threshold_107 > 0 and ltime > threshold_107
+                if not is_incident:
                     car_laps_data[cid]['valid_laps'].append(ltime)
                 else:
                     car_laps_data[cid]['incidents'] += 1
+                
+                car_laps_data[cid]['all_laps'].append({
+                    'time_ms': ltime,
+                    'is_incident': is_incident
+                })
 
         session_best_avg_pace = float('inf')
 
-        # Find session records (Best Pace inside 107%)
         for line in leaderboard:
             timing = line['timing']
-            
             if timing['totalTime'] > 2000000000: continue 
             if timing['lapCount'] < min_laps_required: continue
 
@@ -100,14 +100,19 @@ def load_and_process():
                 if pace < session_best_avg_pace:
                     session_best_avg_pace = pace
 
-        # --- 3. PROCESS DRIVERS ---
-        session_results = []
+        temp_drivers = []
         valid_pos_counter = 1 
+        seen_pids = set()
         
         for line in leaderboard:
             timing = line['timing']
             driver = line['currentDriver']
             pid = driver['playerId']
+            
+            if pid in seen_pids:
+                continue
+            seen_pids.add(pid)
+            
             name = f"{driver['firstName']} {driver['lastName']}".strip() 
             car_id = line['car']['carId']
             car_model = line['car']['carModel']
@@ -116,74 +121,117 @@ def load_and_process():
             total_time = timing['totalTime']
             best_lap = timing['bestLap']
 
-            # --- FILTERS ---
-            if total_time > 2000000000 or total_time == 0: continue 
-            if laps < min_laps_required: continue
-            # ---------------
+            is_classified = laps >= min_laps_required
 
-            pos = valid_pos_counter
-            valid_pos_counter += 1
-            points = POINTS_SYSTEM.get(pos, 0)
-            
-            # Get valid laps and incidents for this driver
+            if is_classified:
+                display_pos = valid_pos_counter
+                real_pos_num = valid_pos_counter
+                points = POINTS_SYSTEM.get(valid_pos_counter, 0)
+                valid_pos_counter += 1
+            else:
+                display_pos = "DNF"
+                real_pos_num = -1
+                points = 0
+
             valid_laps = car_laps_data.get(car_id, {}).get('valid_laps', [])
             incidents = car_laps_data.get(car_id, {}).get('incidents', 0)
             
-            # Calculate 107% Filtered Avg Lap
-            avg_lap_driver = sum(valid_laps) / len(valid_laps) if valid_laps else None
+            avg_lap_driver_ms = sum(valid_laps) / len(valid_laps) if valid_laps and is_classified else None
+            lap_history = car_laps_data.get(car_id, {}).get('all_laps', []) if is_classified else []
             
-            # Calculate Pace Gap (RITMO) para la media global
             gap_pace_str = "-"
             current_pace_gap_ms = 0
             has_valid_pace_gap = False
 
-            if avg_lap_driver and session_best_avg_pace != float('inf'):
-                diff = avg_lap_driver - session_best_avg_pace
+            if is_classified and avg_lap_driver_ms and session_best_avg_pace != float('inf'):
+                diff = avg_lap_driver_ms - session_best_avg_pace
                 gap_pace_str = f"+{diff/1000:.3f}" if diff > 0 else "PACE REF"
                 current_pace_gap_ms = diff
                 has_valid_pace_gap = True
 
-            # Calculate Best Lap Gap (Solo para mostrar en la carrera)
             gap_best_str = "-"
-            if best_lap < 2000000000 and session_best_lap != float('inf'):
+            current_best_gap_ms = 0
+            if is_classified and best_lap < 2000000000 and session_best_lap != float('inf'):
                 diff = best_lap - session_best_lap
                 gap_best_str = f"+{diff/1000:.3f}" if diff > 0 else "BEST LAP"
-            elif best_lap > 2000000000:
-                best_lap = 0 # Format as "-"
+                current_best_gap_ms = diff
 
-            session_results.append({
-                "pos": pos,
+            temp_drivers.append({
+                "pid": pid,
+                "is_classified": is_classified,
+                "real_pos_num": real_pos_num, 
+                "pos": display_pos,
                 "name": name,
                 "car_model": car_model,
                 "points": points,
-                "laps": laps,
-                "incidents": incidents,
-                "avg_time": format_time(avg_lap_driver),
+                "laps": laps if is_classified else "-", 
+                "incidents": incidents if is_classified else "-", 
+                "avg_time": format_time(avg_lap_driver_ms) if is_classified else "-",
+                "avg_lap_ms": avg_lap_driver_ms, 
+                "lap_history": lap_history, 
+                "gap_pace_ms": current_pace_gap_ms, 
+                "gap_best_ms": current_best_gap_ms, 
+                "has_valid_pace_gap": has_valid_pace_gap,
                 "gap_pace": gap_pace_str,
-                "best_lap": format_time(best_lap),
+                "best_lap": format_time(best_lap) if is_classified and best_lap < 2000000000 else "-",
                 "gap_best": gap_best_str
             })
 
-            # --- GLOBAL ACCUMULATION ---
+        valid_paces = [d for d in temp_drivers if d['avg_lap_ms'] is not None and d['is_classified']]
+        valid_paces.sort(key=lambda x: x['avg_lap_ms'])
+        
+        for i, d in enumerate(valid_paces):
+            d['pace_pos'] = i + 1
+
+        for d in temp_drivers:
+            if 'pace_pos' not in d:
+                d['pace_pos'] = "-"
+
+        session_results = []
+        for d in temp_drivers:
+            pid = d['pid']
+            
             if pid not in global_drivers:
                 global_drivers[pid] = {
-                    "name": name,
+                    "name": d['name'],
+                    "cars": {}, 
                     "total_points": 0,
                     "races": 0,
                     "pos_sum": 0,
-                    "gap_pace_sum_ms": 0, # Ahora acumulamos el Pace Gap
+                    "pos_count": 0,
+                    "pace_pos_sum": 0,
+                    "pace_pos_count": 0,
+                    "pos_gained_vs_pace": 0, 
+                    "gap_pace_sum_ms": 0, 
                     "gap_count": 0 
                 }
             
-            global_drivers[pid]["name"] = name
-            global_drivers[pid]["total_points"] += points
-            global_drivers[pid]["races"] += 1
-            global_drivers[pid]["pos_sum"] += pos
-            
-            # Sumar el Pace Gap para la tabla general (Excluyendo Nordschleife)
-            if has_valid_pace_gap and track_name != "nurburgring_24h":
-                global_drivers[pid]["gap_pace_sum_ms"] += current_pace_gap_ms
-                global_drivers[pid]["gap_count"] += 1
+            # --- AQUÍ ESTÁ EL CAMBIO ---
+            # Solo acumulamos la participación si el piloto se clasificó
+            if d['is_classified']:
+                global_drivers[pid]["cars"][d['car_model']] = global_drivers[pid]["cars"].get(d['car_model'], 0) + 1
+                global_drivers[pid]["total_points"] += d['points']
+                global_drivers[pid]["races"] += 1 
+                global_drivers[pid]["pos_sum"] += d['real_pos_num']
+                global_drivers[pid]["pos_count"] += 1
+                
+                if d['pace_pos'] != "-":
+                    gained = d['pace_pos'] - d['real_pos_num']
+                    global_drivers[pid]["pos_gained_vs_pace"] += gained
+                
+                if d['pace_pos'] != "-":
+                    global_drivers[pid]["pace_pos_sum"] += d['pace_pos']
+                    global_drivers[pid]["pace_pos_count"] += 1
+
+                if d['has_valid_pace_gap'] and track_name != "nurburgring_24h":
+                    global_drivers[pid]["gap_pace_sum_ms"] += d['gap_pace_ms']
+                    global_drivers[pid]["gap_count"] += 1
+
+            del d['pid']
+            del d['is_classified']
+            del d['real_pos_num']
+            del d['has_valid_pace_gap']
+            session_results.append(d)
 
         session_list.append({
             "id": f"race_{file_index}",
@@ -191,31 +239,36 @@ def load_and_process():
             "results": session_results
         })
 
-    # 4. FINAL RANKING
     final_ranking = []
     for pid, data in global_drivers.items():
-        if data["races"] == 0: continue
+        # Si tiene 0 carreras (porque solo corrió en carreras donde hizo DNF), ni lo metemos
+        if data["races"] == 0: continue 
 
         avg_points = data["total_points"] / data["races"]
-        avg_pos = data["pos_sum"] / data["races"]
         
-        # Calcular el Avg Gap basándonos en el Pace
+        avg_pos_str = round(data["pos_sum"] / data["pos_count"], 1) if data["pos_count"] > 0 else "-" 
+        avg_pace_pos_str = round(data["pace_pos_sum"] / data["pace_pos_count"], 1) if data["pace_pos_count"] > 0 else "-"
+
         if data["gap_count"] > 0:
             avg_gap_ms = data["gap_pace_sum_ms"] / data["gap_count"]
             avg_gap_str = f"+{avg_gap_ms/1000:.3f}"
         else:
             avg_gap_str = "-"
 
+        favorite_car_id = max(data["cars"], key=data["cars"].get) if data["cars"] else 0
+
         final_ranking.append({
             "name": data["name"],
+            "favorite_car": favorite_car_id,
             "points": data["total_points"],
             "avg_points": round(avg_points, 2),
-            "avg_pos": round(avg_pos, 1),
+            "avg_pos": avg_pos_str,
+            "avg_pace_pos": avg_pace_pos_str,
+            "net_pos_gained": data["pos_gained_vs_pace"],
             "avg_gap": avg_gap_str,
-            "races": data["races"]
+            "races": data["races"] 
         })
     
-    # Ordenar por puntos (descendente) y luego por Pace Gap (ascendente) en caso de empate
     final_ranking.sort(key=lambda x: (-x["points"], float(x["avg_gap"].replace('+', '')) if x["avg_gap"] != "-" else float('inf')))
 
     mega_json = {

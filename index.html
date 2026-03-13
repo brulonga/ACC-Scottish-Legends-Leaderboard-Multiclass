@@ -4,16 +4,35 @@
     <meta charset="UTF-8">
     <title>Scottish Legends Championship</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f8f9fa; padding-top: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .nav-header { background: #212529; color: white; padding: 15px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
         .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         .gap-plus { color: #dc3545; font-size: 0.9em; } 
-        .gap-ref { color: #198754; font-weight: bold; font-size: 0.9em; } 
+        /* ETIQUETA MORADA ESTILO eSPORTS PARA LÍDERES */
+        .badge-purple { background-color: #8a2be2; color: white; font-weight: bold; padding: 4px 8px; border-radius: 4px; text-shadow: 0px 1px 2px rgba(0,0,0,0.2); }
         
         .fw-bold-num { font-weight: 700; color: #0d6efd; }
         .text-small { font-size: 0.85em; color: #6c757d; }
+        .sortable { cursor: pointer; user-select: none; transition: background 0.2s; }
+        .sortable:hover { background-color: #3b4248 !important; }
+        .sort-icon { font-size: 0.8em; margin-left: 5px; color: #adb5bd; }
+        .driver-link { cursor: pointer; color: #0d6efd; text-decoration: none; transition: 0.2s; }
+        .driver-link:hover { text-decoration: underline; color: #0a58ca; }
+        
+        .chart-container { position: relative; height: 320px; width: 100%; }
+        .incident-list { max-height: 320px; overflow-y: auto; background: #fff; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px; font-size: 0.9em;}
+        .incident-item { border-bottom: 1px solid #f1f3f5; padding: 5px 0; }
+        .incident-item:last-child { border-bottom: none; }
+        
+        .stat-badge { background: #e9ecef; color: #495057; padding: 5px 10px; border-radius: 15px; font-size: 0.85em; font-weight: 600; margin-right: 8px; display: inline-block; margin-bottom: 5px;}
+        .stat-badge-positive { background: #d1e7dd; color: #0f5132; }
+        .stat-badge-negative { background: #f8d7da; color: #842029; }
+        
+        .promo-box { border-left: 4px solid #0d6efd; background-color: #f8f9fa; padding: 10px 15px; border-radius: 4px; }
+        .dnf-row td { color: #adb5bd !important; } /* Atenúa las celdas de los DNF en las tablas */
     </style>
 </head>
 <body>
@@ -21,10 +40,12 @@
 <div class="container mb-5">
     
     <div class="nav-header mb-3">
-        <h3 class="m-0">🏆 Scottish Legends - Monday's Marathon Leaderboard</h3>
-        <select id="viewSelector" class="form-select w-auto bg-dark text-white border-secondary" onchange="switchView()">
-            <option value="global">🌍 Championship Standings</option>
-        </select>
+        <h3 class="m-0">🏆 Scottish Legends - Monday's Marathon</h3>
+        <div>
+            <select id="viewSelector" class="form-select d-inline-block w-auto bg-dark text-white border-secondary" onchange="switchView()">
+                <option value="global">🌍 Championship Standings</option>
+            </select>
+        </div>
     </div>
 
     <div id="view-global" class="card p-3">
@@ -34,35 +55,59 @@
                 <thead class="table-dark">
                     <tr>
                         <th>Pos</th>
-                        <th>Driver</th>
-                        <th>Total Points</th>
-                        <th>Avg Points</th>
-                        <th>Avg Position</th>
-                        <th>Avg Gap to Leader</th> <th>Races</th>
+                        <th class="sortable" onclick="sortData('name')">Driver <span class="sort-icon">↕</span></th>
+                        <th class="sortable" onclick="sortData('points')">Total Points <span class="sort-icon">↕</span></th>
+                        <th class="sortable" onclick="sortData('net_pos_gained')">Net Pos Gained <span class="sort-icon">↕</span></th>
+                        <th class="sortable" onclick="sortData('avg_points')">Avg Points <span class="sort-icon">↕</span></th>
+                        <th class="sortable" onclick="sortData('avg_pos')">Avg Position <span class="sort-icon">↕</span></th>
+                        <th class="sortable" onclick="sortData('avg_gap')">Avg Pace Gap <span class="sort-icon">↕</span></th>
+                        <th class="sortable" onclick="sortData('races')">Races <span class="sort-icon">↕</span></th>
                     </tr>
                 </thead>
                 <tbody id="table-global"></tbody>
             </table>
         </div>
         
-        <div class="mt-3 text-muted text-small">
-            <p class="mb-1">* Drivers who did not finish the race (DNF) are excluded from stats.</p>
-            <p class="mb-1">* The Nordschleife (Nürburgring 24h) race has been excluded from the 'Avg Gap to Leader' stat due to its unusually long lap time.</p>
-            <p class="mb-0">* 'Incidents' are calculated as the number of completed laps that fall outside 107% of the session's overall best lap (including pitstops/off-tracks).</p>
+        <div class="mt-4 text-muted text-small">
+            <p class="mb-1">* <strong>Net Pos Gained:</strong> The total number of positions a driver has gained (+) or lost (-) compared to their theoretical Pace Position across the season.</p>
+            <p class="mb-1">* To be classified, drivers must complete at least 70% of the leader's laps. Drivers who do not meet this are excluded from these standings.</p>
+            <p class="mb-1">* Nürburgring 24h race is excluded from 'Avg Pace Gap' due to its unusually long lap time.</p>
+            <p class="mb-3">* <strong>Incidents:</strong> Laps that fall outside 107% of the session's overall best lap.</p>
+            
+            <div class="promo-box mt-3 text-dark">
+                <p class="mb-1">📺 <strong>Watch replays:</strong> You can watch some of the races from this server on demand at <a href="https://www.youtube.com/@foxfaceracing" target="_blank" class="fw-bold text-decoration-none">@foxfaceracing</a></p>
+                <p class="mb-0">🏎️ <strong>More content:</strong> Follow <a href="https://www.youtube.com/@TheRookieDriver-LFM" target="_blank" class="fw-bold text-decoration-none">@TheRookieDriver-LFM</a> for more Scottish Legend Server and LFM content!</p>
+            </div>
         </div>
     </div>
 
     <div id="view-session" class="card p-3 d-none">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h4 class="text-secondary" id="session-title">Race Details</h4>
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <h4 class="text-secondary m-0" id="session-title">Race Details</h4>
             <span class="badge bg-primary">Official Results</span>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <h6 class="text-secondary text-center mb-2">Race Pace Analysis (Gap in seconds)</h6>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="chartRacePace"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <h6 class="text-secondary text-center mb-2">Best Lap Analysis (Gap in seconds)</h6>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="chartRaceBest"></canvas>
+                </div>
+            </div>
         </div>
         
         <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
+            <table class="table table-hover align-middle">
                 <thead class="table-secondary">
                     <tr>
                         <th>Pos</th>
+                        <th>Pace Pos</th>
                         <th>Driver</th>
                         <th>Car</th>
                         <th>Points</th>
@@ -77,14 +122,87 @@
                 <tbody id="table-session"></tbody>
             </table>
         </div>
+
+        <div class="mt-3 text-muted text-small text-center">
+            <p class="mb-0">* <strong>Race Pace</strong> measures the average speed of valid laps. <strong>Best Lap</strong> measures absolute qualifying speed. Compare both to see who is fast over one lap vs consistent over the race.</p>
+        </div>
+    </div>
+
+    <div id="view-driver" class="card p-4 d-none">
+        <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-4">
+            <div>
+                <h2 id="driver-name" class="fw-bold mb-1">Driver Name</h2>
+                <div id="driver-quick-stats" class="mt-2"></div>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('viewSelector').value='global'; switchView();">🔙 Back to Standings</button>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6 mb-4">
+                <h5 class="text-secondary">Position vs Pace Potential</h5>
+                <p class="text-small text-muted mb-2">Compares final race position against the theoretical position based on pure pace.</p>
+                <div class="chart-container">
+                    <canvas id="chartPositions"></canvas>
+                </div>
+            </div>
+            
+            <div class="col-lg-6 mb-4">
+                <h5 class="text-secondary">Total Time Lost to Incidents</h5>
+                <p class="text-small text-muted mb-2">Evolution of time lost per race vs the Race Winner's time lost.</p>
+                <div class="chart-container">
+                    <canvas id="chartIncidentsTime"></canvas>
+                </div>
+            </div>
+            
+            <div class="col-lg-12 mb-4">
+                <h5 class="text-secondary">Pace & Best Lap Gaps Evolution</h5>
+                <p class="text-small text-muted mb-2">Shows how close you are getting to the leader's pace (Closer to 0 is better).</p>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="chartGapsEvolution"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <hr class="mb-4">
+
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="text-secondary mb-0">Clean Lap Telemetry</h5>
+                    <select id="driverRaceSelector" class="form-select form-select-sm w-auto" onchange="renderRaceAnalysis()"></select>
+                </div>
+                <p class="text-small text-muted mb-2">Your valid lap times compared directly against the Race Winner's laps.</p>
+                <div class="chart-container">
+                    <canvas id="chartLaps"></canvas>
+                </div>
+            </div>
+
+            <div class="col-lg-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="text-secondary mb-0">Incident Log</h5>
+                </div>
+                <div id="incident-log" class="incident-list"></div>
+            </div>
+        </div>
+        
+        <div class="mt-3 text-muted text-small text-center">
+            <p class="mb-0">* Note: Gap values for the Nordschleife (Nurburgring 24h) are divided by 4 in the evolution charts to normalize the scale against standard 2-minute tracks.</p>
+        </div>
     </div>
 
 </div>
 
 <script>
     let fullData = null;
+    let currentSort = { column: 'points', asc: false }; 
+    let chartPosInstance = null;
+    let chartLapInstance = null;
+    let chartIncTimeInstance = null;
+    let chartRacePaceInstance = null;
+    let chartRaceBestInstance = null;
+    let chartGapsEvolutionInstance = null; // NUEVA INSTANCIA
+    let currentDriverData = null; 
 
-    // Diccionario con las IDs de los coches de ACC
     const carNames = {
         0: "Porsche 991 GT3 R", 1: "Mercedes-AMG GT3", 2: "Ferrari 488 GT3", 3: "Audi R8 LMS",
         4: "Lamborghini Huracan GT3", 5: "McLaren 650S GT3", 6: "Nissan GT-R Nismo GT3 '18",
@@ -104,25 +222,74 @@
         .then(response => response.json())
         .then(data => {
             fullData = data;
-            initDashboard();
+            renderGlobalTable(); 
+            initDropdown();
         })
         .catch(err => console.error("Error loading JSON:", err));
 
-    function initDashboard() {
+    function msToTimeStr(ms) {
+        if (!ms) return "-";
+        let minutes = Math.floor(ms / 60000);
+        let seconds = Math.floor((ms % 60000) / 1000);
+        let milis = Math.floor(ms % 1000);
+        return `${minutes}:${seconds.toString().padStart(2, '0')}.${milis.toString().padStart(3, '0')}`;
+    }
+
+    function renderGlobalTable() {
         const tGlobal = document.getElementById('table-global');
+        tGlobal.innerHTML = ""; 
+        
         fullData.global.forEach((p, index) => {
+            let netBadge = p.net_pos_gained > 0 ? `<span class="text-success fw-bold">+${p.net_pos_gained}</span>` :
+                           p.net_pos_gained < 0 ? `<span class="text-danger fw-bold">${p.net_pos_gained}</span>` :
+                           `<span class="text-muted">0</span>`;
+
             tGlobal.innerHTML += `
                 <tr>
                     <td>${index + 1}</td>
-                    <td class="fw-bold">${p.name}</td>
+                    <td class="fw-bold"><span class="driver-link" onclick="openDriverProfile('${p.name}')">${p.name}</span></td>
                     <td class="fs-5 fw-bold-num">${p.points}</td>
+                    <td>${netBadge}</td>
                     <td>${p.avg_points}</td>
                     <td>${p.avg_pos}</td>
-                    <td>${p.avg_gap}</td> <td>${p.races}</td>
+                    <td>${p.avg_gap}</td> 
+                    <td>${p.races}</td>
                 </tr>
             `;
         });
+    }
 
+    function sortData(column) {
+        if (currentSort.column === column) {
+            currentSort.asc = !currentSort.asc;
+        } else {
+            currentSort.column = column;
+            currentSort.asc = (column === 'name' || column === 'avg_gap' || column === 'avg_pos');
+        }
+
+        fullData.global.sort((a, b) => {
+            let valA = a[column];
+            let valB = b[column];
+
+            if (column === 'avg_gap') {
+                valA = valA === '-' ? Infinity : parseFloat(valA.replace('+', ''));
+                valB = valB === '-' ? Infinity : parseFloat(valB.replace('+', ''));
+            } else if (column === 'avg_pos') {
+                valA = valA === '-' ? Infinity : parseFloat(valA);
+                valB = valB === '-' ? Infinity : parseFloat(valB);
+            } else if (column === 'name') {
+                return currentSort.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            }
+
+            if (valA < valB) return currentSort.asc ? -1 : 1;
+            if (valA > valB) return currentSort.asc ? 1 : -1;
+            return 0;
+        });
+
+        renderGlobalTable();
+    }
+
+    function initDropdown() {
         const selector = document.getElementById('viewSelector');
         fullData.sessions.forEach((session, index) => {
             const option = document.createElement('option');
@@ -134,44 +301,471 @@
 
     function switchView() {
         const selector = document.getElementById('viewSelector');
-        const viewGlobal = document.getElementById('view-global');
-        const viewSession = document.getElementById('view-session');
-        
-        const value = selector.value;
+        const views = ['view-global', 'view-session', 'view-driver'];
+        views.forEach(v => document.getElementById(v).classList.add('d-none'));
 
+        const value = selector.value;
         if (value === "global") {
-            viewGlobal.classList.remove('d-none');
-            viewSession.classList.add('d-none');
+            document.getElementById('view-global').classList.remove('d-none');
         } else {
-            viewGlobal.classList.add('d-none');
-            viewSession.classList.remove('d-none');
+            document.getElementById('view-session').classList.remove('d-none');
             loadSession(fullData.sessions[value]);
         }
     }
 
+    function openDriverProfile(driverName) {
+        ['view-global', 'view-session'].forEach(v => document.getElementById(v).classList.add('d-none'));
+        document.getElementById('view-driver').classList.remove('d-none');
+        document.getElementById('viewSelector').value = 'global'; 
+
+        const globalStats = fullData.global.find(d => d.name === driverName);
+        document.getElementById('driver-name').innerText = driverName;
+        
+        const favCarName = carNames[globalStats.favorite_car] || "Unknown Car";
+        let netPosHtml = "";
+        if (globalStats.net_pos_gained > 0) {
+            netPosHtml = `<span class="stat-badge stat-badge-positive">↑ +${globalStats.net_pos_gained} Pos Net Gained</span>`;
+        } else if (globalStats.net_pos_gained < 0) {
+            netPosHtml = `<span class="stat-badge stat-badge-negative">↓ ${globalStats.net_pos_gained} Pos Net Lost</span>`;
+        } else {
+            netPosHtml = `<span class="stat-badge">0 Pos Net Change</span>`;
+        }
+
+        document.getElementById('driver-quick-stats').innerHTML = `
+            <span class="stat-badge">🚗 ${favCarName}</span>
+            <span class="stat-badge">📊 Avg Expected Pos: P${globalStats.avg_pace_pos}</span>
+            ${netPosHtml}
+        `;
+
+        let raceHistory = [];
+        fullData.sessions.forEach((session, idx) => {
+            const result = session.results.find(r => r.name === driverName);
+            if (result && result.pos !== "DNF") { 
+                const winner = session.results.find(r => r.pos === 1);
+
+                raceHistory.push({
+                    globalRaceIndex: idx, 
+                    sessionName: session.name,
+                    pos: result.pos,
+                    pacePos: result.pace_pos,
+                    laps: result.lap_history, 
+                    avgLapMs: result.avg_lap_ms,
+                    gapPaceMs: result.gap_pace_ms, // Nuevos datos para la gráfica de gaps
+                    gapBestMs: result.gap_best_ms,
+                    winnerData: winner ? winner : null
+                });
+            }
+        });
+
+        currentDriverData = raceHistory;
+
+        renderPositionChart(raceHistory);
+        renderIncidentEvolutionChart(raceHistory);
+        renderGapEvolutionChart(raceHistory); // LLAMADA A LA NUEVA GRÁFICA
+
+        const raceSelector = document.getElementById('driverRaceSelector');
+        raceSelector.innerHTML = "";
+        raceHistory.forEach((race, idx) => {
+            raceSelector.add(new Option(race.sessionName, idx));
+        });
+        
+        if(raceHistory.length > 0) {
+            renderRaceAnalysis();
+        } else {
+            document.getElementById('chartLaps').getContext('2d').clearRect(0,0,1000,1000);
+            document.getElementById('incident-log').innerHTML = "<p>No completed races to analyze.</p>";
+        }
+    }
+
+    function renderPositionChart(history) {
+        const ctx = document.getElementById('chartPositions').getContext('2d');
+        if (chartPosInstance) chartPosInstance.destroy();
+
+        const labels = history.map(h => h.sessionName.split(':')[0]); 
+        const actualPosData = history.map(h => h.pos === "DNF" ? null : h.pos);
+        const pacePosData = history.map(h => h.pacePos === "-" ? null : h.pacePos);
+
+        chartPosInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Final Position',
+                        data: actualPosData,
+                        borderColor: '#0d6efd',
+                        backgroundColor: '#0d6efd',
+                        pointRadius: 5,
+                        borderWidth: 2,
+                        spanGaps: false 
+                    },
+                    {
+                        label: 'Pace Expected Pos',
+                        data: pacePosData,
+                        borderColor: '#ffc107',
+                        backgroundColor: '#ffc107',
+                        borderDash: [5, 5], 
+                        pointRadius: 4,
+                        borderWidth: 2,
+                        spanGaps: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { reverse: true, min: 1, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (ctx) => ctx.raw === null ? 'DNF / No Data' : `${ctx.dataset.label}: P${ctx.raw}` } }
+                }
+            }
+        });
+    }
+
+    function renderIncidentEvolutionChart(history) {
+        const ctx = document.getElementById('chartIncidentsTime').getContext('2d');
+        if (chartIncTimeInstance) chartIncTimeInstance.destroy();
+
+        const labels = history.map(h => h.sessionName.split(':')[0]);
+        
+        const driverLostData = history.map(h => {
+            if (!h.laps || !h.avgLapMs) return null;
+            let lost = 0;
+            h.laps.forEach(l => { if(l.is_incident) lost += (l.time_ms - h.avgLapMs); });
+            return (lost / 1000).toFixed(1); 
+        });
+
+        const winnerLostData = history.map(h => {
+            if (!h.winnerData || !h.winnerData.lap_history || !h.winnerData.avg_lap_ms) return null;
+            let lost = 0;
+            h.winnerData.lap_history.forEach(l => { if(l.is_incident) lost += (l.time_ms - h.winnerData.avg_lap_ms); });
+            return (lost / 1000).toFixed(1); 
+        });
+
+        chartIncTimeInstance = new Chart(ctx, {
+            type: 'line', 
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Your Time Lost (s)',
+                        data: driverLostData,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                        fill: true,
+                        tension: 0.2, 
+                        pointRadius: 6,
+                        pointBackgroundColor: '#dc3545'
+                    },
+                    {
+                        label: "Winner's Time Lost (s)",
+                        data: winnerLostData,
+                        borderColor: '#6c757d',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 0, 
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: +${ctx.raw}s` } }
+                }
+            }
+        });
+    }
+
+    // NUEVA FUNCIÓN: Gráfica de evolución de Gaps
+    function renderGapEvolutionChart(history) {
+        const ctx = document.getElementById('chartGapsEvolution').getContext('2d');
+        if (chartGapsEvolutionInstance) chartGapsEvolutionInstance.destroy();
+
+        const labels = history.map(h => h.sessionName.split(':')[0]); 
+
+        const paceGapData = history.map(h => {
+            if (h.pos === "DNF" || h.gapPaceMs === undefined) return null;
+            let gapSecs = h.gapPaceMs / 1000;
+            if (h.sessionName.toLowerCase().includes("nurburgring")) {
+                gapSecs = gapSecs / 4; // Ajuste matemático para Nordschleife
+            }
+            return gapSecs.toFixed(3);
+        });
+
+        const bestGapData = history.map(h => {
+            if (h.pos === "DNF" || h.gapBestMs === undefined) return null;
+            let gapSecs = h.gapBestMs / 1000;
+            if (h.sessionName.toLowerCase().includes("nurburgring")) {
+                gapSecs = gapSecs / 4; // Ajuste matemático para Nordschleife
+            }
+            return gapSecs.toFixed(3);
+        });
+
+        chartGapsEvolutionInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Avg Pace Gap (s)',
+                        data: paceGapData,
+                        borderColor: '#0dcaf0', // Cyan
+                        backgroundColor: '#0dcaf0',
+                        borderWidth: 2,
+                        pointRadius: 5,
+                        spanGaps: true 
+                    },
+                    {
+                        label: 'Best Lap Gap (s)',
+                        data: bestGapData,
+                        borderColor: '#8a2be2', // Morado
+                        backgroundColor: '#8a2be2',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        spanGaps: true 
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Seconds to Leader' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: +${ctx.raw}s` } }
+                }
+            }
+        });
+    }
+
+    function renderRaceAnalysis() {
+        const raceIndex = document.getElementById('driverRaceSelector').value;
+        const raceData = currentDriverData[raceIndex];
+        
+        const ctx = document.getElementById('chartLaps').getContext('2d');
+        if (chartLapInstance) chartLapInstance.destroy();
+
+        if (!raceData || !raceData.laps || raceData.laps.length === 0) {
+            chartLapInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] } });
+            document.getElementById('incident-log').innerHTML = "<p>No data available for this race.</p>";
+            return;
+        }
+
+        let maxLaps = raceData.laps.length;
+        if (raceData.winnerData && raceData.winnerData.lap_history) {
+            maxLaps = Math.max(maxLaps, raceData.winnerData.lap_history.length);
+        }
+
+        const labels = Array.from({length: maxLaps}, (_, i) => `L${i + 1}`);
+        const cleanDataPoints = raceData.laps.map(l => l.is_incident ? null : l.time_ms / 1000);
+        
+        let winnerDataPoints = [];
+        if (raceData.winnerData && raceData.winnerData.lap_history) {
+            winnerDataPoints = raceData.winnerData.lap_history.map(l => l.is_incident ? null : l.time_ms / 1000);
+        }
+
+        chartLapInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Your Clean Laps',
+                        data: cleanDataPoints,
+                        borderColor: '#198754', 
+                        backgroundColor: '#198754',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        spanGaps: true 
+                    },
+                    {
+                        label: "Winner's Clean Laps",
+                        data: winnerDataPoints,
+                        borderColor: '#ffc107', 
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 2,
+                        pointBackgroundColor: '#ffc107',
+                        spanGaps: true 
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const valMs = context.raw * 1000;
+                                return `${context.dataset.label}: ${msToTimeStr(valMs)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const logContainer = document.getElementById('incident-log');
+        let htmlContent = "";
+        let totalLostMs = 0;
+        let incCount = 1;
+
+        raceData.laps.forEach((l, i) => {
+            if (l.is_incident && raceData.avgLapMs) {
+                const lost = l.time_ms - raceData.avgLapMs;
+                totalLostMs += lost;
+                const lostSecs = (lost / 1000).toFixed(2);
+                htmlContent += `
+                    <div class="incident-item">
+                        <span class="text-danger fw-bold">⚠️ Incident ${incCount}</span> - Lap ${i + 1}<br>
+                        <span class="text-muted text-small">Lost: <strong>+${lostSecs}s</strong></span>
+                    </div>
+                `;
+                incCount++;
+            }
+        });
+
+        if (totalLostMs === 0) {
+            logContainer.innerHTML = `<div class="alert alert-success p-2 text-center">🏎️ Flawless Race! Zero incidents.</div>`;
+        } else {
+            const totalLostSecs = (totalLostMs / 1000).toFixed(2);
+            logContainer.innerHTML = `
+                <div class="alert alert-danger p-2 mb-2 shadow-sm text-center">
+                    <strong>Total Time Lost:</strong> +${totalLostSecs}s
+                </div>
+                ${htmlContent}
+            `;
+        }
+    }
+
+    function renderRaceCharts(session) {
+        // 1. Gráfica de Pace (Excluimos DNF)
+        const ctxPace = document.getElementById('chartRacePace').getContext('2d');
+        if (chartRacePaceInstance) chartRacePaceInstance.destroy();
+
+        const validPaceDrivers = session.results.filter(r => r.pos !== "DNF" && (r.gap_pace_ms > 0 || r.gap_pace === "PACE REF"));
+        validPaceDrivers.sort((a, b) => a.gap_pace_ms - b.gap_pace_ms);
+
+        const labelsPace = validPaceDrivers.map(d => d.name.substring(0, 15));
+        const dataPace = validPaceDrivers.map(d => d.gap_pace_ms / 1000); 
+        const colorsPace = validPaceDrivers.map(d => d.gap_pace === "PACE REF" ? '#8a2be2' : '#6c757d');
+
+        chartRacePaceInstance = new Chart(ctxPace, {
+            type: 'bar',
+            data: {
+                labels: labelsPace,
+                datasets: [{
+                    label: 'Pace Gap (s)',
+                    data: dataPace,
+                    backgroundColor: colorsPace,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { 
+                        callbacks: { 
+                            label: (ctx) => ctx.raw === 0 ? 'PACE REF' : `+${ctx.raw.toFixed(3)}s`
+                        } 
+                    } 
+                },
+                scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10 } } } }
+            }
+        });
+
+        // 2. Gráfica de Best Lap (Excluimos DNF)
+        const ctxBest = document.getElementById('chartRaceBest').getContext('2d');
+        if (chartRaceBestInstance) chartRaceBestInstance.destroy();
+
+        let validBestDrivers = session.results.map(r => {
+            let gap = 0;
+            if (r.gap_best === "BEST LAP") gap = 0;
+            else if (r.gap_best !== "-" && r.gap_best) gap = parseFloat(r.gap_best.replace('+', '')) * 1000;
+            else gap = Infinity;
+            return { ...r, calculated_best_gap: gap };
+        }).filter(r => r.pos !== "DNF" && r.calculated_best_gap !== Infinity);
+
+        validBestDrivers.sort((a, b) => a.calculated_best_gap - b.calculated_best_gap);
+
+        const labelsBest = validBestDrivers.map(d => d.name.substring(0, 15));
+        const dataBest = validBestDrivers.map(d => d.calculated_best_gap / 1000); 
+        const colorsBest = validBestDrivers.map(d => d.gap_best === "BEST LAP" ? '#8a2be2' : '#00bbf9'); 
+
+        chartRaceBestInstance = new Chart(ctxBest, {
+            type: 'bar',
+            data: {
+                labels: labelsBest,
+                datasets: [{
+                    label: 'Best Lap Gap (s)',
+                    data: dataBest,
+                    backgroundColor: colorsBest,
+                    borderRadius: 3
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false }, 
+                    tooltip: { 
+                        callbacks: { 
+                            label: (ctx) => ctx.raw === 0 ? 'BEST LAP' : `+${ctx.raw.toFixed(3)}s`
+                        } 
+                    } 
+                },
+                scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10 } } } }
+            }
+        });
+    }
+
     function loadSession(session) {
         document.getElementById('session-title').innerText = session.name;
+        
+        renderRaceCharts(session);
+
         const tbody = document.getElementById('table-session');
         tbody.innerHTML = ""; 
 
         session.results.forEach(r => {
-            const stylePace = r.gap_pace.includes('+') ? 'gap-plus' : 'gap-ref';
-            const styleBest = r.gap_best.includes('+') ? 'gap-plus' : 'gap-ref';
+            // ETIQUETAS MORADAS PARA LOS LÍDERES
+            const paceHtml = r.gap_pace === 'PACE REF' ? `<span class="badge badge-purple">PACE REF</span>` : (r.gap_pace.includes('+') ? `<span class="gap-plus">${r.gap_pace}</span>` : r.gap_pace);
+            const bestHtml = r.gap_best === 'BEST LAP' ? `<span class="badge badge-purple">BEST LAP</span>` : (r.gap_best.includes('+') ? `<span class="gap-plus">${r.gap_best}</span>` : r.gap_best);
             
             const nombreCoche = carNames[r.car_model] || `Unknown Car (${r.car_model})`;
+            const displayPos = r.pos === "DNF" ? `<span class="badge bg-danger">DNF</span>` : `<span class="fw-bold">${r.pos}</span>`;
+            const displayPacePos = r.pace_pos === "-" ? "-" : `<span class="text-muted">P${r.pace_pos}</span>`;
+            
+            // Si es DNF atenuamos toda la fila con CSS
+            const rowClass = r.pos === "DNF" ? 'class="dnf-row"' : '';
 
             tbody.innerHTML += `
-                <tr>
-                    <td>${r.pos}</td>
-                    <td>${r.name}</td>
+                <tr ${rowClass}>
+                    <td>${displayPos}</td>
+                    <td>${displayPacePos}</td>
+                    <td class="fw-bold"><span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span></td>
                     <td><small class="text-muted">${nombreCoche}</small></td>
                     <td class="fw-bold">${r.points}</td>
                     <td>${r.laps}</td>
                     <td>${r.incidents}</td>
                     <td>${r.avg_time}</td>
-                    <td class="${stylePace}">${r.gap_pace}</td>
+                    <td>${paceHtml}</td>
                     <td>${r.best_lap}</td>
-                    <td class="${styleBest}">${r.gap_best}</td>
+                    <td>${bestHtml}</td>
                 </tr>
             `;
         });
