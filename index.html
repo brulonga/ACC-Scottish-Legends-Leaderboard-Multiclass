@@ -9,10 +9,10 @@
         body { background-color: #f8f9fa; padding-top: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         .nav-header { background: #212529; color: white; padding: 15px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
         .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        
         .gap-plus { color: #dc3545; font-size: 0.9em; } 
-        /* ETIQUETA MORADA ESTILO eSPORTS PARA LÍDERES */
+        
         .badge-purple { background-color: #8a2be2; color: white; font-weight: bold; padding: 4px 8px; border-radius: 4px; text-shadow: 0px 1px 2px rgba(0,0,0,0.2); }
+        .badge-qualy { background-color: #0dcaf0; color: #000; font-weight: bold; padding: 4px 8px; border-radius: 4px;}
         
         .fw-bold-num { font-weight: 700; color: #0d6efd; }
         .text-small { font-size: 0.85em; color: #6c757d; }
@@ -28,11 +28,11 @@
         .incident-item:last-child { border-bottom: none; }
         
         .stat-badge { background: #e9ecef; color: #495057; padding: 5px 10px; border-radius: 15px; font-size: 0.85em; font-weight: 600; margin-right: 8px; display: inline-block; margin-bottom: 5px;}
-        .stat-badge-positive { background: #d1e7dd; color: #0f5132; }
-        .stat-badge-negative { background: #f8d7da; color: #842029; }
-        
         .promo-box { border-left: 4px solid #0d6efd; background-color: #f8f9fa; padding: 10px 15px; border-radius: 4px; }
-        .dnf-row td { color: #adb5bd !important; } /* Atenúa las celdas de los DNF en las tablas */
+        .dnf-row td { color: #adb5bd !important; } 
+        
+        .session-nav-btn { background: #e9ecef; border: none; padding: 8px 20px; font-weight: bold; color: #495057; border-radius: 5px 5px 0 0; cursor: pointer;}
+        .session-nav-btn.active { background: #0d6efd; color: white; }
     </style>
 </head>
 <body>
@@ -44,6 +44,7 @@
         <div>
             <select id="viewSelector" class="form-select d-inline-block w-auto bg-dark text-white border-secondary" onchange="switchView()">
                 <option value="global">🌍 Championship Standings</option>
+                <option value="hof">🏛️ Hall of Fame</option>
             </select>
         </div>
     </div>
@@ -51,17 +52,19 @@
     <div id="view-global" class="card p-3">
         <h4 class="mb-3 text-secondary">Overall Standings</h4>
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle" style="font-size: 0.9em;">
                 <thead class="table-dark">
                     <tr>
                         <th>Pos</th>
-                        <th class="sortable" onclick="sortData('name')">Driver <span class="sort-icon">↕</span></th>
-                        <th class="sortable" onclick="sortData('points')">Total Points <span class="sort-icon">↕</span></th>
-                        <th class="sortable" onclick="sortData('net_pos_gained')">Net Pos Gained <span class="sort-icon">↕</span></th>
-                        <th class="sortable" onclick="sortData('avg_points')">Avg Points <span class="sort-icon">↕</span></th>
-                        <th class="sortable" onclick="sortData('avg_pos')">Avg Position <span class="sort-icon">↕</span></th>
-                        <th class="sortable" onclick="sortData('avg_gap')">Avg Pace Gap <span class="sort-icon">↕</span></th>
-                        <th class="sortable" onclick="sortData('races')">Races <span class="sort-icon">↕</span></th>
+                        <th class="sortable" onclick="sortData('name')">Driver ↕</th>
+                        <th class="sortable" onclick="sortData('points')">Pts ↕</th>
+                        <th class="sortable text-center" onclick="sortData('net_pos_gained_qualy')">Net vs Qualy ↕</th>
+                        <th class="sortable text-center" onclick="sortData('net_pos_gained')">Net vs Pace ↕</th>
+                        <th class="sortable" onclick="sortData('avg_qualy_pos')">Avg Qualy Pos ↕</th>
+                        <th class="sortable" onclick="sortData('avg_qualy_gap')">Avg Qualy Gap ↕</th>
+                        <th class="sortable" onclick="sortData('avg_pos')">Avg Race Pos ↕</th>
+                        <th class="sortable" onclick="sortData('avg_gap')">Avg Race Pace Gap ↕</th>
+                        <th class="sortable" onclick="sortData('races')">Races ↕</th>
                     </tr>
                 </thead>
                 <tbody id="table-global"></tbody>
@@ -69,9 +72,9 @@
         </div>
         
         <div class="mt-4 text-muted text-small">
-            <p class="mb-1">* <strong>Net Pos Gained:</strong> The total number of positions a driver has gained (+) or lost (-) compared to their theoretical Pace Position across the season.</p>
-            <p class="mb-1">* To be classified, drivers must complete at least 70% of the leader's laps. Drivers who do not meet this are excluded from these standings.</p>
-            <p class="mb-1">* Nürburgring 24h race is excluded from 'Avg Pace Gap' due to its unusually long lap time.</p>
+            <p class="mb-1">* <strong>Net vs Qualy / Pace:</strong> Total positions gained or lost across the season vs starting grid / theoretical pace.</p>
+            <p class="mb-1">* To be classified, drivers must complete at least 70% of the leader's laps. Drivers below 70% (DNF) are excluded from these standings.</p>
+            <p class="mb-1">* Nürburgring 24h race is excluded from 'Avg Gap' stats due to its unusually long lap time.</p>
             <p class="mb-3">* <strong>Incidents:</strong> Laps that fall outside 107% of the session's overall best lap.</p>
             
             <div class="promo-box mt-3 text-dark">
@@ -81,50 +84,100 @@
         </div>
     </div>
 
+    <div id="view-hof" class="card p-3 d-none">
+        <h4 class="mb-4 text-secondary text-center">🏛️ Track Records & Hall of Fame</h4>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle text-center" style="font-size: 0.95em;">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-start align-middle" rowspan="2">Track</th>
+                        <th colspan="3" class="border-start">⏱️ Qualifying Record</th>
+                        <th colspan="3" class="border-start">🏁 Race Lap Record</th>
+                    </tr>
+                    <tr>
+                        <th class="border-start">Best Lap</th>
+                        <th>Driver</th>
+                        <th>Car / Cond</th>
+                        <th class="border-start">Best Lap</th>
+                        <th>Driver</th>
+                        <th>Car / Cond</th>
+                    </tr>
+                </thead>
+                <tbody id="table-hof"></tbody>
+            </table>
+        </div>
+        <div class="mt-3 text-muted text-small text-center">
+            <p class="mb-0">* Note: Specific track states (Optimum, Fast, Green) and exact temperatures are not natively exported by base ACC result files, only the general Weather (Dry/Wet).</p>
+        </div>
+    </div>
+
     <div id="view-session" class="card p-3 d-none">
-        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
             <h4 class="text-secondary m-0" id="session-title">Race Details</h4>
             <span class="badge bg-primary">Official Results</span>
         </div>
-
-        <div class="row mb-4">
-            <div class="col-lg-6">
-                <h6 class="text-secondary text-center mb-2">Race Pace Analysis (Gap in seconds)</h6>
-                <div class="chart-container" style="height: 250px;">
-                    <canvas id="chartRacePace"></canvas>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <h6 class="text-secondary text-center mb-2">Best Lap Analysis (Gap in seconds)</h6>
-                <div class="chart-container" style="height: 250px;">
-                    <canvas id="chartRaceBest"></canvas>
-                </div>
-            </div>
-        </div>
         
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-secondary">
-                    <tr>
-                        <th>Pos</th>
-                        <th>Pace Pos</th>
-                        <th>Driver</th>
-                        <th>Car</th>
-                        <th>Points</th>
-                        <th>Laps</th>
-                        <th>Incidents</th>
-                        <th>Avg Lap Time</th>
-                        <th>Pace Gap</th>
-                        <th>Best Lap</th>
-                        <th>Best Lap Gap</th>
-                    </tr>
-                </thead>
-                <tbody id="table-session"></tbody>
-            </table>
+        <div class="border-bottom mb-3">
+            <button id="btn-tab-race" class="session-nav-btn active" onclick="switchSessionTab('race')">🏁 RACE RESULTS</button>
+            <button id="btn-tab-qualy" class="session-nav-btn" onclick="switchSessionTab('qualy')">⏱️ QUALY RESULTS</button>
         </div>
 
-        <div class="mt-3 text-muted text-small text-center">
-            <p class="mb-0">* <strong>Race Pace</strong> measures the average speed of valid laps. <strong>Best Lap</strong> measures absolute qualifying speed. Compare both to see who is fast over one lap vs consistent over the race.</p>
+        <div id="tab-race">
+            <div class="row mb-4">
+                <div class="col-lg-6">
+                    <h6 class="text-secondary text-center mb-2">Race Pace Analysis (Gap to Leader)</h6>
+                    <div class="chart-container" style="height: 250px;"><canvas id="chartRacePace"></canvas></div>
+                </div>
+                <div class="col-lg-6">
+                    <h6 class="text-secondary text-center mb-2">Race Best Lap Analysis (Gap to Leader)</h6>
+                    <div class="chart-container" style="height: 250px;"><canvas id="chartRaceBest"></canvas></div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" style="font-size: 0.9em;">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Pos</th>
+                            <th>Qualy</th>
+                            <th>Pace Pos</th>
+                            <th class="text-center">Net vs Q</th>
+                            <th>Driver</th>
+                            <th>Car</th>
+                            <th>Pts</th>
+                            <th>Laps</th>
+                            <th>Inc</th>
+                            <th>Avg Lap</th>
+                            <th>Pace Gap</th>
+                            <th>Best Lap</th>
+                            <th>Best Lap Gap</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-session-race"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="tab-qualy" class="d-none">
+            <div class="row mb-4 justify-content-center">
+                <div class="col-lg-8">
+                    <h6 class="text-secondary text-center mb-2">Qualifying Gap to Pole (Seconds)</h6>
+                    <div class="chart-container" style="height: 250px;"><canvas id="chartQualyGaps"></canvas></div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle w-75 mx-auto text-center">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Pos</th>
+                            <th class="text-start">Driver</th>
+                            <th>Car</th>
+                            <th>Best Lap</th>
+                            <th>Gap to Pole</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-session-qualy"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -136,30 +189,38 @@
             </div>
             <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('viewSelector').value='global'; switchView();">🔙 Back to Standings</button>
         </div>
+        
+        <div class="row">
+            <div class="col-12 mb-4">
+                <h5 class="text-secondary">Personal Best Laps by Track</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle text-center" style="font-size: 0.9em;">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th class="text-start">Track</th>
+                                <th>Best Qualy Lap</th>
+                                <th>Best Race Lap</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-driver-pb"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
         <div class="row">
             <div class="col-lg-6 mb-4">
-                <h5 class="text-secondary">Position vs Pace Potential</h5>
-                <p class="text-small text-muted mb-2">Compares final race position against the theoretical position based on pure pace.</p>
-                <div class="chart-container">
-                    <canvas id="chartPositions"></canvas>
-                </div>
+                <h5 class="text-secondary">Position History (Qualy vs Race vs Pace)</h5>
+                <div class="chart-container"><canvas id="chartPositions"></canvas></div>
             </div>
-            
             <div class="col-lg-6 mb-4">
                 <h5 class="text-secondary">Total Time Lost to Incidents</h5>
-                <p class="text-small text-muted mb-2">Evolution of time lost per race vs the Race Winner's time lost.</p>
-                <div class="chart-container">
-                    <canvas id="chartIncidentsTime"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="chartIncidentsTime"></canvas></div>
             </div>
-            
             <div class="col-lg-12 mb-4">
-                <h5 class="text-secondary">Pace & Best Lap Gaps Evolution</h5>
-                <p class="text-small text-muted mb-2">Shows how close you are getting to the leader's pace (Closer to 0 is better).</p>
-                <div class="chart-container" style="height: 250px;">
-                    <canvas id="chartGapsEvolution"></canvas>
-                </div>
+                <h5 class="text-secondary">Gaps Evolution (Qualy vs Race Pace vs Best Lap)</h5>
+                <div class="chart-container" style="height: 280px;"><canvas id="chartGapsEvolution"></canvas></div>
+                <div class="text-muted text-small text-center mt-1">* Note: Gap values for the Nordschleife are divided by 4 in this chart to normalize the scale against standard tracks.</div>
             </div>
         </div>
 
@@ -172,21 +233,14 @@
                     <select id="driverRaceSelector" class="form-select form-select-sm w-auto" onchange="renderRaceAnalysis()"></select>
                 </div>
                 <p class="text-small text-muted mb-2">Your valid lap times compared directly against the Race Winner's laps.</p>
-                <div class="chart-container">
-                    <canvas id="chartLaps"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="chartLaps"></canvas></div>
             </div>
-
             <div class="col-lg-4 mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="text-secondary mb-0">Incident Log</h5>
                 </div>
                 <div id="incident-log" class="incident-list"></div>
             </div>
-        </div>
-        
-        <div class="mt-3 text-muted text-small text-center">
-            <p class="mb-0">* Note: Gap values for the Nordschleife (Nurburgring 24h) are divided by 4 in the evolution charts to normalize the scale against standard 2-minute tracks.</p>
         </div>
     </div>
 
@@ -195,12 +249,9 @@
 <script>
     let fullData = null;
     let currentSort = { column: 'points', asc: false }; 
-    let chartPosInstance = null;
-    let chartLapInstance = null;
-    let chartIncTimeInstance = null;
-    let chartRacePaceInstance = null;
-    let chartRaceBestInstance = null;
-    let chartGapsEvolutionInstance = null; // NUEVA INSTANCIA
+    let chartPosInstance, chartLapInstance, chartIncTimeInstance;
+    let chartRacePaceInstance, chartRaceBestInstance, chartQualyGapsInstance;
+    let chartGapsEvolutionInstance;
     let currentDriverData = null; 
 
     const carNames = {
@@ -224,11 +275,12 @@
             fullData = data;
             renderGlobalTable(); 
             initDropdown();
+            renderHallOfFame();
         })
         .catch(err => console.error("Error loading JSON:", err));
 
     function msToTimeStr(ms) {
-        if (!ms) return "-";
+        if (!ms || ms === Infinity) return "-";
         let minutes = Math.floor(ms / 60000);
         let seconds = Math.floor((ms % 60000) / 1000);
         let milis = Math.floor(ms % 1000);
@@ -240,18 +292,19 @@
         tGlobal.innerHTML = ""; 
         
         fullData.global.forEach((p, index) => {
-            let netBadge = p.net_pos_gained > 0 ? `<span class="text-success fw-bold">+${p.net_pos_gained}</span>` :
-                           p.net_pos_gained < 0 ? `<span class="text-danger fw-bold">${p.net_pos_gained}</span>` :
-                           `<span class="text-muted">0</span>`;
+            let netPace = p.net_pos_gained > 0 ? `<span class="text-success fw-bold">+${p.net_pos_gained}</span>` : p.net_pos_gained < 0 ? `<span class="text-danger fw-bold">${p.net_pos_gained}</span>` : `<span class="text-muted">0</span>`;
+            let netQualy = p.net_pos_gained_qualy > 0 ? `<span class="text-success fw-bold">+${p.net_pos_gained_qualy}</span>` : p.net_pos_gained_qualy < 0 ? `<span class="text-danger fw-bold">${p.net_pos_gained_qualy}</span>` : `<span class="text-muted">0</span>`;
 
             tGlobal.innerHTML += `
                 <tr>
                     <td>${index + 1}</td>
                     <td class="fw-bold"><span class="driver-link" onclick="openDriverProfile('${p.name}')">${p.name}</span></td>
                     <td class="fs-5 fw-bold-num">${p.points}</td>
-                    <td>${netBadge}</td>
-                    <td>${p.avg_points}</td>
-                    <td>${p.avg_pos}</td>
+                    <td class="text-center">${netQualy}</td>
+                    <td class="text-center">${netPace}</td>
+                    <td>${p.avg_qualy_pos !== "-" ? 'P'+p.avg_qualy_pos : '-'}</td>
+                    <td>${p.avg_qualy_gap}</td>
+                    <td>P${p.avg_pos}</td>
                     <td>${p.avg_gap}</td> 
                     <td>${p.races}</td>
                 </tr>
@@ -260,61 +313,91 @@
     }
 
     function sortData(column) {
-        if (currentSort.column === column) {
-            currentSort.asc = !currentSort.asc;
-        } else {
-            currentSort.column = column;
-            currentSort.asc = (column === 'name' || column === 'avg_gap' || column === 'avg_pos');
-        }
+        if (currentSort.column === column) currentSort.asc = !currentSort.asc;
+        else { currentSort.column = column; currentSort.asc = (column === 'name' || column.includes('gap') || column.includes('pos')); }
 
         fullData.global.sort((a, b) => {
-            let valA = a[column];
-            let valB = b[column];
-
-            if (column === 'avg_gap') {
-                valA = valA === '-' ? Infinity : parseFloat(valA.replace('+', ''));
-                valB = valB === '-' ? Infinity : parseFloat(valB.replace('+', ''));
-            } else if (column === 'avg_pos') {
-                valA = valA === '-' ? Infinity : parseFloat(valA);
-                valB = valB === '-' ? Infinity : parseFloat(valB);
-            } else if (column === 'name') {
-                return currentSort.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
-            }
-
+            let valA = a[column]; let valB = b[column];
+            if (typeof valA === 'string' && valA.includes('+')) valA = parseFloat(valA.replace('+', ''));
+            if (typeof valB === 'string' && valB.includes('+')) valB = parseFloat(valB.replace('+', ''));
+            if (valA === '-' || valA === undefined) valA = Infinity;
+            if (valB === '-' || valB === undefined) valB = Infinity;
+            
+            if (column === 'name') return currentSort.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            
             if (valA < valB) return currentSort.asc ? -1 : 1;
             if (valA > valB) return currentSort.asc ? 1 : -1;
             return 0;
         });
-
         renderGlobalTable();
     }
 
     function initDropdown() {
         const selector = document.getElementById('viewSelector');
         fullData.sessions.forEach((session, index) => {
-            const option = document.createElement('option');
-            option.value = index; 
-            option.text = `🏁 ${session.name}`;
-            selector.add(option);
+            selector.add(new Option(`🏁 ${session.name}`, index));
         });
     }
 
     function switchView() {
-        const selector = document.getElementById('viewSelector');
-        const views = ['view-global', 'view-session', 'view-driver'];
-        views.forEach(v => document.getElementById(v).classList.add('d-none'));
+        const value = document.getElementById('viewSelector').value;
+        ['view-global', 'view-session', 'view-driver', 'view-hof'].forEach(v => document.getElementById(v).classList.add('d-none'));
 
-        const value = selector.value;
-        if (value === "global") {
-            document.getElementById('view-global').classList.remove('d-none');
-        } else {
+        if (value === "global") document.getElementById('view-global').classList.remove('d-none');
+        else if (value === "hof") document.getElementById('view-hof').classList.remove('d-none');
+        else {
             document.getElementById('view-session').classList.remove('d-none');
             loadSession(fullData.sessions[value]);
         }
     }
 
+    function switchSessionTab(tab) {
+        document.getElementById('btn-tab-race').classList.remove('active');
+        document.getElementById('btn-tab-qualy').classList.remove('active');
+        document.getElementById('tab-race').classList.add('d-none');
+        document.getElementById('tab-qualy').classList.add('d-none');
+        
+        document.getElementById(`btn-tab-${tab}`).classList.add('active');
+        document.getElementById(`tab-${tab}`).classList.remove('d-none');
+    }
+
+    function renderHallOfFame() {
+        const tbody = document.getElementById('table-hof');
+        tbody.innerHTML = "";
+        
+        for (const [trackId, data] of Object.entries(fullData.hall_of_fame)) {
+            let hasQualy = data.qualy && data.qualy.time_ms;
+            let hasRace = data.race && data.race.time_ms;
+            if(!hasQualy && !hasRace) continue;
+
+            let qTime = hasQualy ? msToTimeStr(data.qualy.time_ms) : "-";
+            let qDriver = hasQualy ? data.qualy.driver : "-";
+            let qCar = hasQualy ? (carNames[data.qualy.car] || "Unknown") : "-";
+            let qCond = hasQualy ? (data.qualy.wet === 1 ? "🌧️ Wet" : "☀️ Dry") : "-";
+
+            let rTime = hasRace ? msToTimeStr(data.race.time_ms) : "-";
+            let rDriver = hasRace ? data.race.driver : "-";
+            let rCar = hasRace ? (carNames[data.race.car] || "Unknown") : "-";
+            let rCond = hasRace ? (data.race.wet === 1 ? "🌧️ Wet" : "☀️ Dry") : "-";
+
+            tbody.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-start align-middle">${data.name}</td>
+                    
+                    <td class="border-start align-middle"><span class="badge badge-qualy">Q</span> <strong>${qTime}</strong></td>
+                    <td class="text-primary fw-bold align-middle">${qDriver}</td>
+                    <td class="align-middle"><small class="text-muted">${qCar}<br>${qCond}</small></td>
+                    
+                    <td class="border-start align-middle"><span class="badge bg-primary">R</span> <strong>${rTime}</strong></td>
+                    <td class="text-primary fw-bold align-middle">${rDriver}</td>
+                    <td class="align-middle"><small class="text-muted">${rCar}<br>${rCond}</small></td>
+                </tr>
+            `;
+        }
+    }
+
     function openDriverProfile(driverName) {
-        ['view-global', 'view-session'].forEach(v => document.getElementById(v).classList.add('d-none'));
+        ['view-global', 'view-session', 'view-hof'].forEach(v => document.getElementById(v).classList.add('d-none'));
         document.getElementById('view-driver').classList.remove('d-none');
         document.getElementById('viewSelector').value = 'global'; 
 
@@ -322,106 +405,85 @@
         document.getElementById('driver-name').innerText = driverName;
         
         const favCarName = carNames[globalStats.favorite_car] || "Unknown Car";
-        let netPosHtml = "";
-        if (globalStats.net_pos_gained > 0) {
-            netPosHtml = `<span class="stat-badge stat-badge-positive">↑ +${globalStats.net_pos_gained} Pos Net Gained</span>`;
-        } else if (globalStats.net_pos_gained < 0) {
-            netPosHtml = `<span class="stat-badge stat-badge-negative">↓ ${globalStats.net_pos_gained} Pos Net Lost</span>`;
-        } else {
-            netPosHtml = `<span class="stat-badge">0 Pos Net Change</span>`;
-        }
-
         document.getElementById('driver-quick-stats').innerHTML = `
             <span class="stat-badge">🚗 ${favCarName}</span>
-            <span class="stat-badge">📊 Avg Expected Pos: P${globalStats.avg_pace_pos}</span>
-            ${netPosHtml}
+            <span class="stat-badge">📊 Avg Race Pos: P${globalStats.avg_pos}</span>
+            <span class="stat-badge">⏱️ Avg Qualy Pos: P${globalStats.avg_qualy_pos}</span>
         `;
 
         let raceHistory = [];
-        fullData.sessions.forEach((session, idx) => {
-            const result = session.results.find(r => r.name === driverName);
-            if (result && result.pos !== "DNF") { 
-                const winner = session.results.find(r => r.pos === 1);
+        let pbData = {}; 
 
-                raceHistory.push({
-                    globalRaceIndex: idx, 
-                    sessionName: session.name,
-                    pos: result.pos,
-                    pacePos: result.pace_pos,
-                    laps: result.lap_history, 
-                    avgLapMs: result.avg_lap_ms,
-                    gapPaceMs: result.gap_pace_ms, // Nuevos datos para la gráfica de gaps
-                    gapBestMs: result.gap_best_ms,
-                    winnerData: winner ? winner : null
-                });
+        fullData.sessions.forEach((session, idx) => {
+            const parts = session.name.split(':');
+            const cleanTrackName = parts.length > 1 ? parts[1].trim() : session.name;
+
+            const result = session.results.find(r => r.name === driverName);
+            if (result) { 
+                if (!pbData[cleanTrackName]) pbData[cleanTrackName] = { qualy: Infinity, race: Infinity };
+                if (result.qualy_time_ms && result.qualy_time_ms < pbData[cleanTrackName].qualy) pbData[cleanTrackName].qualy = result.qualy_time_ms;
+                if (result.best_lap_ms && result.best_lap_ms < pbData[cleanTrackName].race) pbData[cleanTrackName].race = result.best_lap_ms;
+
+                if(result.pos !== "DNF") {
+                    const winner = session.results.find(r => r.pos === 1);
+                    raceHistory.push({
+                        sessionName: cleanTrackName, 
+                        pos: result.pos, pacePos: result.pace_pos, qualyPos: result.qualy_pos,
+                        laps: result.lap_history, avgLapMs: result.avg_lap_ms,
+                        
+                        // CORRECCIÓN MAGISTRAL: Convertimos a null si la info string dice "-", si no, pasamos el número (incluso si es 0).
+                        gapPaceMs: result.gap_pace === "-" ? null : result.gap_pace_ms, 
+                        gapBestMs: result.gap_best === "-" ? null : result.gap_best_ms, 
+                        qualyGapMs: result.qualy_gap === "-" ? null : result.qualy_gap_ms,
+                        
+                        winnerData: winner ? winner : null
+                    });
+                }
             }
         });
 
-        currentDriverData = raceHistory;
+        const pbTable = document.getElementById('table-driver-pb');
+        pbTable.innerHTML = "";
+        for (const [track, times] of Object.entries(pbData)) {
+            let qStr = times.qualy !== Infinity ? msToTimeStr(times.qualy) : "-";
+            let rStr = times.race !== Infinity ? msToTimeStr(times.race) : "-";
+            pbTable.innerHTML += `
+                <tr>
+                    <td class="fw-bold text-start">${track}</td>
+                    <td><span class="badge badge-qualy">Q</span> <strong>${qStr}</strong></td>
+                    <td><span class="badge bg-primary">R</span> <strong>${rStr}</strong></td>
+                </tr>
+            `;
+        }
 
+        currentDriverData = raceHistory;
         renderPositionChart(raceHistory);
         renderIncidentEvolutionChart(raceHistory);
-        renderGapEvolutionChart(raceHistory); // LLAMADA A LA NUEVA GRÁFICA
+        renderGapEvolutionChart(raceHistory); 
 
         const raceSelector = document.getElementById('driverRaceSelector');
         raceSelector.innerHTML = "";
-        raceHistory.forEach((race, idx) => {
-            raceSelector.add(new Option(race.sessionName, idx));
-        });
+        raceHistory.forEach((race, idx) => raceSelector.add(new Option(race.sessionName, idx)));
         
-        if(raceHistory.length > 0) {
-            renderRaceAnalysis();
-        } else {
-            document.getElementById('chartLaps').getContext('2d').clearRect(0,0,1000,1000);
-            document.getElementById('incident-log').innerHTML = "<p>No completed races to analyze.</p>";
-        }
+        if(raceHistory.length > 0) renderRaceAnalysis();
+        else document.getElementById('incident-log').innerHTML = "<p>No completed races to analyze.</p>";
     }
 
     function renderPositionChart(history) {
         const ctx = document.getElementById('chartPositions').getContext('2d');
         if (chartPosInstance) chartPosInstance.destroy();
 
-        const labels = history.map(h => h.sessionName.split(':')[0]); 
-        const actualPosData = history.map(h => h.pos === "DNF" ? null : h.pos);
-        const pacePosData = history.map(h => h.pacePos === "-" ? null : h.pacePos);
-
         chartPosInstance = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels: history.map(h => h.sessionName),
                 datasets: [
-                    {
-                        label: 'Final Position',
-                        data: actualPosData,
-                        borderColor: '#0d6efd',
-                        backgroundColor: '#0d6efd',
-                        pointRadius: 5,
-                        borderWidth: 2,
-                        spanGaps: false 
-                    },
-                    {
-                        label: 'Pace Expected Pos',
-                        data: pacePosData,
-                        borderColor: '#ffc107',
-                        backgroundColor: '#ffc107',
-                        borderDash: [5, 5], 
-                        pointRadius: 4,
-                        borderWidth: 2,
-                        spanGaps: false
-                    }
+                    { label: 'Final Race Pos', data: history.map(h => h.pos), borderColor: '#0d6efd', backgroundColor: '#0d6efd', borderWidth: 3 },
+                    { label: 'Qualy Pos', data: history.map(h => h.qualyPos === "-" ? null : h.qualyPos), borderColor: '#198754', borderDash: [5, 5], borderWidth: 2 },
+                    { label: 'Pace Expected Pos', data: history.map(h => h.pacePos === "-" ? null : h.pacePos), borderColor: '#ffc107', borderDash: [2, 2], borderWidth: 2 }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { reverse: true, min: 1, ticks: { stepSize: 1 } }
-                },
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { callbacks: { label: (ctx) => ctx.raw === null ? 'DNF / No Data' : `${ctx.dataset.label}: P${ctx.raw}` } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: true, min: 1, ticks: { stepSize: 1 } } } }
         });
     }
 
@@ -429,348 +491,168 @@
         const ctx = document.getElementById('chartIncidentsTime').getContext('2d');
         if (chartIncTimeInstance) chartIncTimeInstance.destroy();
 
-        const labels = history.map(h => h.sessionName.split(':')[0]);
-        
-        const driverLostData = history.map(h => {
+        const driverLost = history.map(h => {
             if (!h.laps || !h.avgLapMs) return null;
-            let lost = 0;
-            h.laps.forEach(l => { if(l.is_incident) lost += (l.time_ms - h.avgLapMs); });
+            let lost = 0; h.laps.forEach(l => { if(l.is_incident) lost += (l.time_ms - h.avgLapMs); });
             return (lost / 1000).toFixed(1); 
         });
 
-        const winnerLostData = history.map(h => {
+        const winnerLost = history.map(h => {
             if (!h.winnerData || !h.winnerData.lap_history || !h.winnerData.avg_lap_ms) return null;
-            let lost = 0;
-            h.winnerData.lap_history.forEach(l => { if(l.is_incident) lost += (l.time_ms - h.winnerData.avg_lap_ms); });
+            let lost = 0; h.winnerData.lap_history.forEach(l => { if(l.is_incident) lost += (l.time_ms - h.winnerData.avg_lap_ms); });
             return (lost / 1000).toFixed(1); 
         });
 
         chartIncTimeInstance = new Chart(ctx, {
             type: 'line', 
             data: {
-                labels: labels,
+                labels: history.map(h => h.sessionName),
                 datasets: [
-                    {
-                        label: 'Your Time Lost (s)',
-                        data: driverLostData,
-                        borderColor: '#dc3545',
-                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
-                        fill: true,
-                        tension: 0.2, 
-                        pointRadius: 6,
-                        pointBackgroundColor: '#dc3545'
-                    },
-                    {
-                        label: "Winner's Time Lost (s)",
-                        data: winnerLostData,
-                        borderColor: '#6c757d',
-                        borderDash: [5, 5],
-                        borderWidth: 2,
-                        pointRadius: 0, 
-                        fill: false
-                    }
+                    { label: 'Your Time Lost (s)', data: driverLost, borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.2)', fill: true, tension: 0.2 },
+                    { label: "Winner's Time Lost (s)", data: winnerLost, borderColor: '#6c757d', borderDash: [5, 5] }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: +${ctx.raw}s` } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
-    // NUEVA FUNCIÓN: Gráfica de evolución de Gaps
     function renderGapEvolutionChart(history) {
         const ctx = document.getElementById('chartGapsEvolution').getContext('2d');
         if (chartGapsEvolutionInstance) chartGapsEvolutionInstance.destroy();
 
-        const labels = history.map(h => h.sessionName.split(':')[0]); 
-
-        const paceGapData = history.map(h => {
-            if (h.pos === "DNF" || h.gapPaceMs === undefined) return null;
-            let gapSecs = h.gapPaceMs / 1000;
-            if (h.sessionName.toLowerCase().includes("nurburgring")) {
-                gapSecs = gapSecs / 4; // Ajuste matemático para Nordschleife
-            }
-            return gapSecs.toFixed(3);
-        });
-
-        const bestGapData = history.map(h => {
-            if (h.pos === "DNF" || h.gapBestMs === undefined) return null;
-            let gapSecs = h.gapBestMs / 1000;
-            if (h.sessionName.toLowerCase().includes("nurburgring")) {
-                gapSecs = gapSecs / 4; // Ajuste matemático para Nordschleife
-            }
-            return gapSecs.toFixed(3);
-        });
+        // AQUÍ ESTÁ LA CORRECCIÓN: Si ms es exactamente 0.000, ahora SÍ pasará el filtro porque solo descartamos los que llegan como null
+        const processGap = (ms, trackName) => {
+            if (ms === undefined || ms === null) return null;
+            let secs = ms / 1000;
+            return trackName.toLowerCase().includes("nurburgring") ? (secs / 4).toFixed(3) : secs.toFixed(3);
+        };
 
         chartGapsEvolutionInstance = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: labels,
+                labels: history.map(h => h.sessionName),
                 datasets: [
-                    {
-                        label: 'Avg Pace Gap (s)',
-                        data: paceGapData,
-                        borderColor: '#0dcaf0', // Cyan
-                        backgroundColor: '#0dcaf0',
-                        borderWidth: 2,
-                        pointRadius: 5,
-                        spanGaps: true 
-                    },
-                    {
-                        label: 'Best Lap Gap (s)',
-                        data: bestGapData,
-                        borderColor: '#8a2be2', // Morado
-                        backgroundColor: '#8a2be2',
-                        borderDash: [5, 5],
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        spanGaps: true 
-                    }
+                    { label: 'Race Pace Gap (s)', data: history.map(h => processGap(h.gapPaceMs, h.sessionName)), borderColor: '#0dcaf0', borderWidth: 2, spanGaps: true },
+                    { label: 'Race Best Lap Gap (s)', data: history.map(h => processGap(h.gapBestMs, h.sessionName)), borderColor: '#8a2be2', borderDash: [5, 5], borderWidth: 2, spanGaps: true },
+                    { label: 'Qualy Gap to Pole (s)', data: history.map(h => processGap(h.qualyGapMs, h.sessionName)), borderColor: '#198754', borderDash: [2, 2], borderWidth: 2, spanGaps: true }
                 ]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        title: { display: true, text: 'Seconds to Leader' }
-                    }
-                },
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: +${ctx.raw}s` } }
-                }
-            }
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     }
 
     function renderRaceAnalysis() {
-        const raceIndex = document.getElementById('driverRaceSelector').value;
-        const raceData = currentDriverData[raceIndex];
-        
+        const data = currentDriverData[document.getElementById('driverRaceSelector').value];
         const ctx = document.getElementById('chartLaps').getContext('2d');
         if (chartLapInstance) chartLapInstance.destroy();
 
-        if (!raceData || !raceData.laps || raceData.laps.length === 0) {
-            chartLapInstance = new Chart(ctx, { type: 'line', data: { labels: [], datasets: [] } });
-            document.getElementById('incident-log').innerHTML = "<p>No data available for this race.</p>";
-            return;
-        }
+        if (!data || !data.laps || data.laps.length === 0) return;
 
-        let maxLaps = raceData.laps.length;
-        if (raceData.winnerData && raceData.winnerData.lap_history) {
-            maxLaps = Math.max(maxLaps, raceData.winnerData.lap_history.length);
-        }
-
+        let maxLaps = data.laps.length;
+        if (data.winnerData && data.winnerData.lap_history) maxLaps = Math.max(maxLaps, data.winnerData.lap_history.length);
         const labels = Array.from({length: maxLaps}, (_, i) => `L${i + 1}`);
-        const cleanDataPoints = raceData.laps.map(l => l.is_incident ? null : l.time_ms / 1000);
-        
-        let winnerDataPoints = [];
-        if (raceData.winnerData && raceData.winnerData.lap_history) {
-            winnerDataPoints = raceData.winnerData.lap_history.map(l => l.is_incident ? null : l.time_ms / 1000);
-        }
 
         chartLapInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [
-                    {
-                        label: 'Your Clean Laps',
-                        data: cleanDataPoints,
-                        borderColor: '#198754', 
-                        backgroundColor: '#198754',
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        spanGaps: true 
-                    },
-                    {
-                        label: "Winner's Clean Laps",
-                        data: winnerDataPoints,
-                        borderColor: '#ffc107', 
-                        borderWidth: 2,
-                        borderDash: [5, 5],
-                        pointRadius: 2,
-                        pointBackgroundColor: '#ffc107',
-                        spanGaps: true 
-                    }
+                    { label: 'Your Clean Laps', data: data.laps.map(l => l.is_incident ? null : l.time_ms / 1000), borderColor: '#198754', spanGaps: true },
+                    { label: "Winner's Clean Laps", data: (data.winnerData?.lap_history||[]).map(l => l.is_incident ? null : l.time_ms / 1000), borderColor: '#ffc107', borderDash: [5, 5], spanGaps: true }
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => {
-                                const valMs = context.raw * 1000;
-                                return `${context.dataset.label}: ${msToTimeStr(valMs)}`;
-                            }
-                        }
-                    }
-                }
+                responsive: true, maintainAspectRatio: false,
+                plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${msToTimeStr(ctx.raw * 1000)}` } } }
             }
         });
 
-        const logContainer = document.getElementById('incident-log');
-        let htmlContent = "";
-        let totalLostMs = 0;
-        let incCount = 1;
-
-        raceData.laps.forEach((l, i) => {
-            if (l.is_incident && raceData.avgLapMs) {
-                const lost = l.time_ms - raceData.avgLapMs;
-                totalLostMs += lost;
-                const lostSecs = (lost / 1000).toFixed(2);
-                htmlContent += `
-                    <div class="incident-item">
-                        <span class="text-danger fw-bold">⚠️ Incident ${incCount}</span> - Lap ${i + 1}<br>
-                        <span class="text-muted text-small">Lost: <strong>+${lostSecs}s</strong></span>
-                    </div>
-                `;
-                incCount++;
+        const log = document.getElementById('incident-log');
+        let html = "", totalMs = 0, inc = 1;
+        data.laps.forEach((l, i) => {
+            if (l.is_incident && data.avgLapMs) {
+                let lost = l.time_ms - data.avgLapMs; totalMs += lost;
+                html += `<div class="incident-item"><span class="text-danger fw-bold">⚠️ Incident ${inc++}</span> - Lap ${i + 1}<br><span class="text-muted text-small">Lost: <strong>+${(lost/1000).toFixed(2)}s</strong></span></div>`;
             }
         });
-
-        if (totalLostMs === 0) {
-            logContainer.innerHTML = `<div class="alert alert-success p-2 text-center">🏎️ Flawless Race! Zero incidents.</div>`;
-        } else {
-            const totalLostSecs = (totalLostMs / 1000).toFixed(2);
-            logContainer.innerHTML = `
-                <div class="alert alert-danger p-2 mb-2 shadow-sm text-center">
-                    <strong>Total Time Lost:</strong> +${totalLostSecs}s
-                </div>
-                ${htmlContent}
-            `;
-        }
+        log.innerHTML = totalMs === 0 ? `<div class="alert alert-success p-2 text-center">🏎️ Flawless Race! Zero incidents.</div>` : `<div class="alert alert-danger p-2 mb-2 shadow-sm text-center"><strong>Total Time Lost:</strong> +${(totalMs/1000).toFixed(2)}s</div>${html}`;
     }
 
     function renderRaceCharts(session) {
-        // 1. Gráfica de Pace (Excluimos DNF)
-        const ctxPace = document.getElementById('chartRacePace').getContext('2d');
-        if (chartRacePaceInstance) chartRacePaceInstance.destroy();
-
-        const validPaceDrivers = session.results.filter(r => r.pos !== "DNF" && (r.gap_pace_ms > 0 || r.gap_pace === "PACE REF"));
-        validPaceDrivers.sort((a, b) => a.gap_pace_ms - b.gap_pace_ms);
-
-        const labelsPace = validPaceDrivers.map(d => d.name.substring(0, 15));
-        const dataPace = validPaceDrivers.map(d => d.gap_pace_ms / 1000); 
-        const colorsPace = validPaceDrivers.map(d => d.gap_pace === "PACE REF" ? '#8a2be2' : '#6c757d');
-
-        chartRacePaceInstance = new Chart(ctxPace, {
-            type: 'bar',
-            data: {
-                labels: labelsPace,
-                datasets: [{
-                    label: 'Pace Gap (s)',
-                    data: dataPace,
-                    backgroundColor: colorsPace,
-                    borderRadius: 3
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false }, 
-                    tooltip: { 
-                        callbacks: { 
-                            label: (ctx) => ctx.raw === 0 ? 'PACE REF' : `+${ctx.raw.toFixed(3)}s`
-                        } 
-                    } 
+        const renderBar = (id, validDrivers, valFunc, labelFunc, isPoleFunc) => {
+            const ctx = document.getElementById(id).getContext('2d');
+            if (window[id+'Inst']) window[id+'Inst'].destroy();
+            window[id+'Inst'] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: validDrivers.map(d => d.name.substring(0, 15)),
+                    datasets: [{
+                        label: 'Gap (s)', data: validDrivers.map(valFunc),
+                        backgroundColor: validDrivers.map(d => isPoleFunc(d) ? '#8a2be2' : (id.includes('Pace') ? '#6c757d' : '#00bbf9'))
+                    }]
                 },
-                scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10 } } } }
-            }
-        });
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: {display:false}, tooltip: {callbacks: {label: labelFunc}} }, scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10 } } } } }
+            });
+        };
 
-        // 2. Gráfica de Best Lap (Excluimos DNF)
-        const ctxBest = document.getElementById('chartRaceBest').getContext('2d');
-        if (chartRaceBestInstance) chartRaceBestInstance.destroy();
+        let paceDrivers = session.results.filter(r => r.pos !== "DNF" && r.gap_pace_ms !== undefined).sort((a, b) => a.gap_pace_ms - b.gap_pace_ms);
+        renderBar('chartRacePace', paceDrivers, d => d.gap_pace_ms/1000, ctx => ctx.raw===0?'PACE REF':`+${ctx.raw.toFixed(3)}s`, d => d.gap_pace_ms===0);
+        
+        let bestDrivers = session.results.filter(r => r.pos !== "DNF" && r.gap_best_ms !== undefined).sort((a, b) => a.gap_best_ms - b.gap_best_ms);
+        renderBar('chartRaceBest', bestDrivers, d => d.gap_best_ms/1000, ctx => ctx.raw===0?'BEST LAP':`+${ctx.raw.toFixed(3)}s`, d => d.gap_best_ms===0);
 
-        let validBestDrivers = session.results.map(r => {
-            let gap = 0;
-            if (r.gap_best === "BEST LAP") gap = 0;
-            else if (r.gap_best !== "-" && r.gap_best) gap = parseFloat(r.gap_best.replace('+', '')) * 1000;
-            else gap = Infinity;
-            return { ...r, calculated_best_gap: gap };
-        }).filter(r => r.pos !== "DNF" && r.calculated_best_gap !== Infinity);
-
-        validBestDrivers.sort((a, b) => a.calculated_best_gap - b.calculated_best_gap);
-
-        const labelsBest = validBestDrivers.map(d => d.name.substring(0, 15));
-        const dataBest = validBestDrivers.map(d => d.calculated_best_gap / 1000); 
-        const colorsBest = validBestDrivers.map(d => d.gap_best === "BEST LAP" ? '#8a2be2' : '#00bbf9'); 
-
-        chartRaceBestInstance = new Chart(ctxBest, {
-            type: 'bar',
-            data: {
-                labels: labelsBest,
-                datasets: [{
-                    label: 'Best Lap Gap (s)',
-                    data: dataBest,
-                    backgroundColor: colorsBest,
-                    borderRadius: 3
-                }]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: false }, 
-                    tooltip: { 
-                        callbacks: { 
-                            label: (ctx) => ctx.raw === 0 ? 'BEST LAP' : `+${ctx.raw.toFixed(3)}s`
-                        } 
-                    } 
-                },
-                scales: { x: { ticks: { autoSkip: false, maxRotation: 45, minRotation: 45, font: { size: 10 } } } }
-            }
-        });
+        if (session.qualy_results && session.qualy_results.length > 0) {
+            let qDrivers = session.qualy_results.filter(r => r.gap_pole_ms !== undefined).sort((a, b) => a.gap_pole_ms - b.gap_pole_ms);
+            renderBar('chartQualyGaps', qDrivers, d => d.gap_pole_ms/1000, ctx => ctx.raw===0?'POLE':`+${ctx.raw.toFixed(3)}s`, d => d.gap_pole_ms===0);
+        }
     }
 
     function loadSession(session) {
         document.getElementById('session-title').innerText = session.name;
-        
+        switchSessionTab('race'); 
         renderRaceCharts(session);
 
-        const tbody = document.getElementById('table-session');
-        tbody.innerHTML = ""; 
-
+        const rBody = document.getElementById('table-session-race');
+        rBody.innerHTML = ""; 
         session.results.forEach(r => {
-            // ETIQUETAS MORADAS PARA LOS LÍDERES
-            const paceHtml = r.gap_pace === 'PACE REF' ? `<span class="badge badge-purple">PACE REF</span>` : (r.gap_pace.includes('+') ? `<span class="gap-plus">${r.gap_pace}</span>` : r.gap_pace);
-            const bestHtml = r.gap_best === 'BEST LAP' ? `<span class="badge badge-purple">BEST LAP</span>` : (r.gap_best.includes('+') ? `<span class="gap-plus">${r.gap_best}</span>` : r.gap_best);
+            const stylePace = r.gap_pace === 'PACE REF' ? `<span class="badge badge-purple">PACE REF</span>` : (r.gap_pace.includes('+') ? `<span class="gap-plus">${r.gap_pace}</span>` : r.gap_pace);
+            const styleBest = r.gap_best === 'BEST LAP' ? `<span class="badge badge-purple">BEST LAP</span>` : (r.gap_best.includes('+') ? `<span class="gap-plus">${r.gap_best}</span>` : r.gap_best);
+            let netQ = r.net_vs_q > 0 ? `<span class="text-success fw-bold">+${r.net_vs_q}</span>` : r.net_vs_q < 0 ? `<span class="text-danger fw-bold">${r.net_vs_q}</span>` : "-";
             
-            const nombreCoche = carNames[r.car_model] || `Unknown Car (${r.car_model})`;
-            const displayPos = r.pos === "DNF" ? `<span class="badge bg-danger">DNF</span>` : `<span class="fw-bold">${r.pos}</span>`;
-            const displayPacePos = r.pace_pos === "-" ? "-" : `<span class="text-muted">P${r.pace_pos}</span>`;
-            
-            // Si es DNF atenuamos toda la fila con CSS
-            const rowClass = r.pos === "DNF" ? 'class="dnf-row"' : '';
-
-            tbody.innerHTML += `
-                <tr ${rowClass}>
-                    <td>${displayPos}</td>
-                    <td>${displayPacePos}</td>
+            rBody.innerHTML += `
+                <tr ${r.pos === "DNF" ? 'class="dnf-row"' : ''}>
+                    <td>${r.pos === "DNF" ? `<span class="badge bg-danger">DNF</span>` : `<span class="fw-bold">${r.pos}</span>`}</td>
+                    <td>${r.qualy_pos !== "-" ? 'P'+r.qualy_pos : '-'}</td>
+                    <td>${r.pace_pos !== "-" ? 'P'+r.pace_pos : '-'}</td>
+                    <td class="text-center">${netQ}</td>
                     <td class="fw-bold"><span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span></td>
-                    <td><small class="text-muted">${nombreCoche}</small></td>
+                    <td><small class="text-muted">${carNames[r.car_model]||"Unknown"}</small></td>
                     <td class="fw-bold">${r.points}</td>
                     <td>${r.laps}</td>
                     <td>${r.incidents}</td>
                     <td>${r.avg_time}</td>
-                    <td>${paceHtml}</td>
+                    <td>${stylePace}</td>
                     <td>${r.best_lap}</td>
-                    <td>${bestHtml}</td>
-                </tr>
-            `;
+                    <td>${styleBest}</td>
+                </tr>`;
         });
+
+        const qBody = document.getElementById('table-session-qualy');
+        qBody.innerHTML = "";
+        if(session.qualy_results) {
+            session.qualy_results.forEach(r => {
+                const styleGap = r.gap_pole === 'POLE' ? `<span class="badge badge-purple">POLE</span>` : (r.gap_pole.includes('+') ? `<span class="gap-plus">${r.gap_pole}</span>` : r.gap_pole);
+                qBody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${r.pos}</td>
+                        <td class="fw-bold text-start"><span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span></td>
+                        <td><small class="text-muted">${carNames[r.car_model]||"Unknown"}</small></td>
+                        <td class="fw-bold">${r.best_lap}</td>
+                        <td>${styleGap}</td>
+                    </tr>`;
+            });
+        }
     }
 </script>
-
 </body>
 </html>
