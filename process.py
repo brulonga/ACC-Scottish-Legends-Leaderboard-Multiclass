@@ -38,7 +38,7 @@ def load_and_process():
     session_list = [] 
     hall_of_fame = {}
 
-    folders_to_check = [".", "session_results", "quali_results"]
+    folders_to_check = [".", "session_results", "qualy_results", "quali_results", "qualy", "quali"]
     raw_files = []
     for folder in folders_to_check:
         raw_files.extend(glob.glob(os.path.join(folder, "*.json")))
@@ -50,11 +50,24 @@ def load_and_process():
 
     qualy_sessions = []
     race_sessions = []
+    seen_fingerprints = set()
 
     for f in all_files:
         data = read_json(f)
         if not data or 'sessionResult' not in data: continue
         
+        try:
+            t_name = data.get('trackName', 'unknown')
+            b_lap = data['sessionResult'].get('bestlap', 0)
+            tot_laps = sum(line['timing']['lapCount'] for line in data['sessionResult']['leaderBoardLines'])
+            fingerprint = f"{t_name}_{b_lap}_{tot_laps}"
+        except:
+            fingerprint = f
+
+        if fingerprint in seen_fingerprints:
+            continue
+        seen_fingerprints.add(fingerprint)
+
         session_type = data.get('sessionType', '').upper()
         if not session_type:
             if '_Q' in f.upper(): session_type = 'Q'
@@ -102,11 +115,12 @@ def load_and_process():
 
             valid_q_pos = 1
             for line in q_leaderboard:
-                pid = line['currentDriver']['playerId']
+                # FIX: Usar el nombre como ID único en vez del PlayerId bugeado de ACC
+                driver_name = f"{line['currentDriver']['firstName']} {line['currentDriver']['lastName']}".strip()
                 q_time = line['timing']['bestLap']
                 
                 if q_time < 2000000000:
-                    qualy_dict[pid] = {
+                    qualy_dict[driver_name] = {
                         "pos": valid_q_pos,
                         "time_ms": q_time,
                         "gap_ms": q_time - qualy_pole_ms if qualy_pole_ms < 2000000000 else 0
@@ -115,7 +129,7 @@ def load_and_process():
                     if q_time < hall_of_fame[track_name]["qualy"]["time_ms"]:
                         hall_of_fame[track_name]["qualy"] = {
                             "time_ms": q_time,
-                            "driver": f"{line['currentDriver']['firstName']} {line['currentDriver']['lastName']}".strip(),
+                            "driver": driver_name,
                             "car": line['car']['carModel'],
                             "wet": q_is_wet
                         }
@@ -169,12 +183,14 @@ def load_and_process():
         for line in race_leaderboard:
             timing = line['timing']
             driver = line['currentDriver']
-            pid = driver['playerId']
+            
+            # FIX: Usar el nombre como ID único en vez del PlayerId bugeado de ACC
+            name = f"{driver['firstName']} {driver['lastName']}".strip() 
+            pid = name 
             
             if pid in seen_pids: continue
             seen_pids.add(pid)
             
-            name = f"{driver['firstName']} {driver['lastName']}".strip() 
             car_id = line['car']['carId']
             car_model = line['car']['carModel']
             
@@ -232,11 +248,10 @@ def load_and_process():
             
             net_vs_q = q_pos - real_pos_num if is_classified and q_info and q_pos != "-" else "-"
 
-            # --- Añadidos raw MS times para Personal Bests ---
             temp_drivers.append({
                 "pid": pid, "is_classified": is_classified, "real_pos_num": real_pos_num, 
                 "pos": display_pos, "qualy_pos": q_pos, "qualy_time": q_time_str,
-                "qualy_time_ms": q_info['time_ms'] if q_info else None, # AÑADIDO
+                "qualy_time_ms": q_info['time_ms'] if q_info else None, 
                 "qualy_gap": q_gap_str, "qualy_gap_ms": q_gap_ms, "net_vs_q": net_vs_q,
                 "name": name, "car_model": car_model, "points": points,
                 "laps": laps if is_classified else "-", "incidents": incidents, 
@@ -245,7 +260,7 @@ def load_and_process():
                 "gap_pace_ms": current_pace_gap_ms, "gap_best_ms": current_best_gap_ms, 
                 "has_valid_pace_gap": has_valid_pace_gap, "gap_pace": gap_pace_str,
                 "best_lap": format_time(best_lap) if is_classified and best_lap < 2000000000 else "-",
-                "best_lap_ms": best_lap if is_classified and best_lap < 2000000000 else None, # AÑADIDO
+                "best_lap_ms": best_lap if is_classified and best_lap < 2000000000 else None,
                 "gap_best": gap_best_str
             })
 

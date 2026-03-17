@@ -29,20 +29,6 @@
       "races": 5
     },
     {
-      "name": "Biggie Smalls",
-      "favorite_car": 32,
-      "points": 426,
-      "avg_points": 142.0,
-      "avg_pos": 2.7,
-      "avg_pace_pos": 2.0,
-      "net_pos_gained": -2,
-      "avg_qualy_pos": 3.0,
-      "avg_qualy_gap": "+0.565",
-      "net_pos_gained_qualy": 0,
-      "avg_gap": "+0.374",
-      "races": 3
-    },
-    {
       "name": "Marsi Bella [RRT]",
       "favorite_car": 35,
       "points": 360,
@@ -53,6 +39,20 @@
       "avg_qualy_pos": 1.0,
       "avg_qualy_gap": "+0.000",
       "net_pos_gained_qualy": 0,
+      "avg_gap": "+0.000",
+      "races": 2
+    },
+    {
+      "name": "Biggie Smalls",
+      "favorite_car": 32,
+      "points": 330,
+      "avg_points": 165.0,
+      "avg_pos": 1.5,
+      "avg_pace_pos": 1.5,
+      "net_pos_gained": 0,
+      "avg_qualy_pos": 2.0,
+      "avg_qualy_gap": "+0.330",
+      "net_pos_gained_qualy": 1,
       "avg_gap": "+0.000",
       "races": 2
     },
@@ -264,6 +264,20 @@
       "avg_qualy_gap": "-",
       "net_pos_gained_qualy": -1,
       "avg_gap": "-",
+      "races": 1
+    },
+    {
+      "name": "David Young",
+      "favorite_car": 32,
+      "points": 96,
+      "avg_points": 96.0,
+      "avg_pos": 5.0,
+      "avg_pace_pos": 3.0,
+      "net_pos_gained": -2,
+      "avg_qualy_pos": 4.0,
+      "avg_qualy_gap": "+0.800",
+      "net_pos_gained_qualy": -1,
+      "avg_gap": "+0.747",
       "races": 1
     },
     {
@@ -561,7 +575,7 @@
       "races": 1
     },
     {
-      "name": "Raymond Crawford",
+      "name": "Raymond Crawford [SL]",
       "favorite_car": 36,
       "points": 45,
       "avg_points": 45.0,
