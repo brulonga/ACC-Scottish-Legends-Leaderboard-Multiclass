@@ -7,7 +7,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { background-color: #f8f9fa; padding-top: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .nav-header { background: #212529; color: white; padding: 15px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .nav-header { background: #212529; color: white; padding: 15px; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .gap-plus { color: #dc3545; font-size: 0.9em; } 
         
@@ -33,6 +33,12 @@
         
         .session-nav-btn { background: #e9ecef; border: none; padding: 8px 20px; font-weight: bold; color: #495057; border-radius: 5px 5px 0 0; cursor: pointer;}
         .session-nav-btn.active { background: #0d6efd; color: white; }
+
+        /* H2H STYLES */
+        .vs-badge { background: #212529; color: white; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-style: italic;}
+        .comp-card { border: 1px solid #dee2e6; border-radius: 8px; background: white; text-align: center; padding: 15px; height: 100%;}
+        .comp-driver-1 { border-top: 4px solid #0d6efd; }
+        .comp-driver-2 { border-top: 4px solid #dc3545; }
     </style>
 </head>
 <body>
@@ -41,8 +47,9 @@
     
     <div class="nav-header mb-3">
         <h3 class="m-0">🏆 Scottish Legends - Monday's Marathon</h3>
-        <div>
-            <select id="viewSelector" class="form-select d-inline-block w-auto bg-dark text-white border-secondary" onchange="switchView()">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-primary fw-bold" onclick="openCompareSelection()">🆚 Compare</button>
+            <select id="viewSelector" class="form-select w-auto bg-dark text-white border-secondary" onchange="switchView()">
                 <option value="global">🌍 Championship Standings</option>
                 <option value="hof">🏛️ Hall of Fame</option>
             </select>
@@ -73,7 +80,7 @@
         
         <div class="mt-4 text-muted text-small">
             <p class="mb-1">* <strong>Net vs Qualy / Pace:</strong> Total positions gained or lost across the season vs starting grid / theoretical pace.</p>
-            <p class="mb-1">* To be classified, drivers must complete at least 70% of the leader's laps. Drivers below 70% (DNF) are excluded from these standings.</p>
+            <p class="mb-1">* To be classified, drivers must complete at least 50% of the leader's laps. Drivers below 50% (DNF) are excluded from these standings.</p>
             <p class="mb-1">* Nürburgring 24h race is excluded from 'Avg Gap' stats due to its unusually long lap time.</p>
             <p class="mb-3">* <strong>Incidents:</strong> Laps that fall outside 107% of the session's overall best lap.</p>
             
@@ -244,6 +251,66 @@
         </div>
     </div>
 
+    <div id="view-compare" class="card p-4 d-none bg-light">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+            <h3 class="m-0 text-secondary">Head-to-Head Comparison</h3>
+            <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('viewSelector').value='global'; switchView();">🔙 Back to Standings</button>
+        </div>
+
+        <div class="row justify-content-center mb-4">
+            <div class="col-md-4">
+                <label class="form-label fw-bold text-primary">Driver 1 (Blue)</label>
+                <select id="comp-driver1" class="form-select"></select>
+            </div>
+            <div class="col-md-1 d-flex align-items-end justify-content-center pb-1">
+                <span class="vs-badge">VS</span>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold text-danger">Driver 2 (Red)</label>
+                <select id="comp-driver2" class="form-select"></select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-dark w-100 fw-bold" onclick="runComparison()">COMPARE</button>
+            </div>
+        </div>
+
+        <div id="comp-results" class="d-none">
+            <div class="row mb-4" id="comp-stats-container">
+                </div>
+
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <h5 class="text-secondary">Race vs Qualy Positions</h5>
+                    <p class="text-small text-muted mb-2">Solid = Race | Dashed = Qualy</p>
+                    <div class="chart-container"><canvas id="chartCompPos"></canvas></div>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <h5 class="text-secondary">Total Time Lost to Incidents</h5>
+                    <p class="text-small text-muted mb-2">Lower is better.</p>
+                    <div class="chart-container"><canvas id="chartCompInc"></canvas></div>
+                </div>
+                <div class="col-lg-12 mb-4">
+                    <h5 class="text-secondary">Pace & Qualy Gap Evolution</h5>
+                    <p class="text-small text-muted mb-2">Solid = Race Pace Gap | Dashed = Qualy Gap</p>
+                    <div class="chart-container" style="height: 280px;"><canvas id="chartCompGaps"></canvas></div>
+                </div>
+            </div>
+
+            <hr class="mb-4">
+
+            <div class="row">
+                <div class="col-12 mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="text-secondary mb-0">H2H Clean Lap Telemetry</h5>
+                        <select id="compRaceSelector" class="form-select form-select-sm w-auto" onchange="renderCompTelemetry()"></select>
+                    </div>
+                    <p class="text-small text-muted mb-2">Direct lap-by-lap comparison on common tracks.</p>
+                    <div class="chart-container"><canvas id="chartCompLaps"></canvas></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -252,7 +319,13 @@
     let chartPosInstance, chartLapInstance, chartIncTimeInstance;
     let chartRacePaceInstance, chartRaceBestInstance, chartQualyGapsInstance;
     let chartGapsEvolutionInstance;
+    
+    // H2H Chart Instances
+    let chartCompPosInst, chartCompIncInst, chartCompGapsInst, chartCompLapsInst;
+
     let currentDriverData = null; 
+    let compDriver1Data = null;
+    let compDriver2Data = null;
 
     const carNames = {
         0: "Porsche 991 GT3 R", 1: "Mercedes-AMG GT3", 2: "Ferrari 488 GT3", 3: "Audi R8 LMS",
@@ -341,7 +414,7 @@
 
     function switchView() {
         const value = document.getElementById('viewSelector').value;
-        ['view-global', 'view-session', 'view-driver', 'view-hof'].forEach(v => document.getElementById(v).classList.add('d-none'));
+        ['view-global', 'view-session', 'view-driver', 'view-hof', 'view-compare'].forEach(v => document.getElementById(v).classList.add('d-none'));
 
         if (value === "global") document.getElementById('view-global').classList.remove('d-none');
         else if (value === "hof") document.getElementById('view-hof').classList.remove('d-none');
@@ -361,6 +434,7 @@
         document.getElementById(`tab-${tab}`).classList.remove('d-none');
     }
 
+    // --- HALL OF FAME ---
     function renderHallOfFame() {
         const tbody = document.getElementById('table-hof');
         tbody.innerHTML = "";
@@ -383,11 +457,9 @@
             tbody.innerHTML += `
                 <tr>
                     <td class="fw-bold text-start align-middle">${data.name}</td>
-                    
                     <td class="border-start align-middle"><span class="badge badge-qualy">Q</span> <strong>${qTime}</strong></td>
                     <td class="text-primary fw-bold align-middle">${qDriver}</td>
                     <td class="align-middle"><small class="text-muted">${qCar}<br>${qCond}</small></td>
-                    
                     <td class="border-start align-middle"><span class="badge bg-primary">R</span> <strong>${rTime}</strong></td>
                     <td class="text-primary fw-bold align-middle">${rDriver}</td>
                     <td class="align-middle"><small class="text-muted">${rCar}<br>${rCond}</small></td>
@@ -396,8 +468,245 @@
         }
     }
 
+    // --- H2H COMPARISON LOGIC ---
+    function openCompareSelection() {
+        ['view-global', 'view-session', 'view-hof', 'view-driver'].forEach(v => document.getElementById(v).classList.add('d-none'));
+        document.getElementById('view-compare').classList.remove('d-none');
+        document.getElementById('comp-results').classList.add('d-none'); // Hide until compared
+        
+        // Populate Dropdowns
+        const sel1 = document.getElementById('comp-driver1');
+        const sel2 = document.getElementById('comp-driver2');
+        sel1.innerHTML = ""; sel2.innerHTML = "";
+        
+        // Sort names alphabetically
+        let drivers = [...fullData.global].sort((a,b) => a.name.localeCompare(b.name));
+        
+        drivers.forEach((d, idx) => {
+            sel1.add(new Option(d.name, d.name));
+            sel2.add(new Option(d.name, d.name));
+        });
+
+        // Set default selection to top 2 in standings if available
+        if (fullData.global.length > 1) {
+            sel1.value = fullData.global[0].name;
+            sel2.value = fullData.global[1].name;
+        }
+    }
+
+    function extractDriverHistory(driverName) {
+        let history = [];
+        fullData.sessions.forEach(session => {
+            const parts = session.name.split(':');
+            const cleanTrackName = parts.length > 1 ? parts[1].trim() : session.name;
+            const result = session.results.find(r => r.name === driverName);
+            if (result && result.pos !== "DNF") {
+                history.push({
+                    sessionName: cleanTrackName,
+                    pos: result.pos, qualyPos: result.qualy_pos,
+                    laps: result.lap_history, avgLapMs: result.avg_lap_ms,
+                    gapPaceMs: result.gap_pace === "-" ? null : result.gap_pace_ms, 
+                    qualyGapMs: result.qualy_gap === "-" ? null : result.qualy_gap_ms
+                });
+            }
+        });
+        return history;
+    }
+
+    function runComparison() {
+        const d1Name = document.getElementById('comp-driver1').value;
+        const d2Name = document.getElementById('comp-driver2').value;
+        
+        if (d1Name === d2Name) {
+            alert("Please select two different drivers.");
+            return;
+        }
+
+        const d1Stats = fullData.global.find(d => d.name === d1Name);
+        const d2Stats = fullData.global.find(d => d.name === d2Name);
+        
+        compDriver1Data = extractDriverHistory(d1Name);
+        compDriver2Data = extractDriverHistory(d2Name);
+
+        document.getElementById('comp-results').classList.remove('d-none');
+
+        // 1. Render Stats Cards
+        renderCompStats(d1Stats, d2Stats);
+
+        // Extract Common Tracks for X-Axis (Union of both drivers)
+        let trackSet = new Set();
+        compDriver1Data.forEach(h => trackSet.add(h.sessionName));
+        compDriver2Data.forEach(h => trackSet.add(h.sessionName));
+        let allTracks = Array.from(trackSet);
+
+        // 2. Render Charts
+        renderCompPositions(allTracks);
+        renderCompIncidents(allTracks);
+        renderCompGaps(allTracks);
+
+        // 3. Render Telemetry Dropdown (Intersection of both drivers)
+        const commonRaces = allTracks.filter(t => 
+            compDriver1Data.some(h => h.sessionName === t) && 
+            compDriver2Data.some(h => h.sessionName === t)
+        );
+        
+        const selRace = document.getElementById('compRaceSelector');
+        selRace.innerHTML = "";
+        if (commonRaces.length > 0) {
+            commonRaces.forEach(r => selRace.add(new Option(r, r)));
+            selRace.disabled = false;
+            renderCompTelemetry();
+        } else {
+            selRace.add(new Option("No common races", ""));
+            selRace.disabled = true;
+            if (chartCompLapsInst) chartCompLapsInst.destroy();
+        }
+    }
+
+    function renderCompStats(d1, d2) {
+        const container = document.getElementById('comp-stats-container');
+        
+        const makeCard = (title, val1, val2, reverseGood = false) => {
+            // Determine winner styling
+            let v1 = parseFloat(val1); let v2 = parseFloat(val2);
+            let d1Better = false; let d2Better = false;
+            
+            if (!isNaN(v1) && !isNaN(v2)) {
+                if (reverseGood) { // Lower is better (Positions, Gaps)
+                    d1Better = v1 < v2; d2Better = v2 < v1;
+                } else { // Higher is better (Points, Net Pos)
+                    d1Better = v1 > v2; d2Better = v2 > v1;
+                }
+            }
+
+            return `
+                <div class="col-md-2 col-6 mb-2">
+                    <div class="border rounded bg-white p-2 text-center h-100">
+                        <small class="text-muted fw-bold d-block mb-1" style="font-size:0.75em">${title}</small>
+                        <div class="d-flex justify-content-around align-items-center">
+                            <span class="${d1Better ? 'text-primary fw-bold fs-5' : 'text-dark'}">${val1}</span>
+                            <span class="text-muted" style="font-size:0.7em">VS</span>
+                            <span class="${d2Better ? 'text-danger fw-bold fs-5' : 'text-dark'}">${val2}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        container.innerHTML = `
+            ${makeCard("Total Points", d1.points, d2.points, false)}
+            ${makeCard("Avg Race Pos", d1.avg_pos, d2.avg_pos, true)}
+            ${makeCard("Avg Qualy Pos", d1.avg_qualy_pos, d2.avg_qualy_pos, true)}
+            ${makeCard("Net Pos vs Q", d1.net_pos_gained_qualy, d2.net_pos_gained_qualy, false)}
+            ${makeCard("Avg Pace Gap", d1.avg_gap.replace('+',''), d2.avg_gap.replace('+',''), true)}
+            ${makeCard("Races", d1.races, d2.races, false)}
+        `;
+    }
+
+    function renderCompPositions(tracks) {
+        const ctx = document.getElementById('chartCompPos').getContext('2d');
+        if (chartCompPosInst) chartCompPosInst.destroy();
+
+        const getData = (driverData, field) => tracks.map(t => {
+            let session = driverData.find(h => h.sessionName === t);
+            return session && session[field] !== "-" ? session[field] : null;
+        });
+
+        chartCompPosInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: tracks,
+                datasets: [
+                    { label: 'D1 Race Pos', data: getData(compDriver1Data, 'pos'), borderColor: '#0d6efd', backgroundColor: '#0d6efd', borderWidth: 3, spanGaps: true },
+                    { label: 'D1 Qualy Pos', data: getData(compDriver1Data, 'qualyPos'), borderColor: '#0d6efd', borderDash: [5,5], borderWidth: 2, spanGaps: true },
+                    { label: 'D2 Race Pos', data: getData(compDriver2Data, 'pos'), borderColor: '#dc3545', backgroundColor: '#dc3545', borderWidth: 3, spanGaps: true },
+                    { label: 'D2 Qualy Pos', data: getData(compDriver2Data, 'qualyPos'), borderColor: '#dc3545', borderDash: [5,5], borderWidth: 2, spanGaps: true },
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { reverse: true, min: 1, ticks: { stepSize: 1 } } } }
+        });
+    }
+
+    function renderCompIncidents(tracks) {
+        const ctx = document.getElementById('chartCompInc').getContext('2d');
+        if (chartCompIncInst) chartCompIncInst.destroy();
+
+        const getLost = (driverData) => tracks.map(t => {
+            let session = driverData.find(h => h.sessionName === t);
+            if (!session || !session.laps || !session.avgLapMs) return null;
+            let lost = 0; session.laps.forEach(l => { if(l.is_incident) lost += (l.time_ms - session.avgLapMs); });
+            return (lost / 1000).toFixed(1);
+        });
+
+        chartCompIncInst = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: tracks,
+                datasets: [
+                    { label: 'D1 Lost (s)', data: getLost(compDriver1Data), backgroundColor: 'rgba(13, 110, 253, 0.7)' },
+                    { label: 'D2 Lost (s)', data: getLost(compDriver2Data), backgroundColor: 'rgba(220, 53, 69, 0.7)' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function renderCompGaps(tracks) {
+        const ctx = document.getElementById('chartCompGaps').getContext('2d');
+        if (chartCompGapsInst) chartCompGapsInst.destroy();
+
+        const getGap = (driverData, field) => tracks.map(t => {
+            let session = driverData.find(h => h.sessionName === t);
+            if (!session || session[field] === null || session[field] === undefined) return null;
+            let secs = session[field] / 1000;
+            return t.toLowerCase().includes("nurburgring") ? (secs / 4).toFixed(3) : secs.toFixed(3);
+        });
+
+        chartCompGapsInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: tracks,
+                datasets: [
+                    { label: 'D1 Pace Gap', data: getGap(compDriver1Data, 'gapPaceMs'), borderColor: '#0d6efd', borderWidth: 2, spanGaps: true },
+                    { label: 'D1 Qualy Gap', data: getGap(compDriver1Data, 'qualyGapMs'), borderColor: '#0d6efd', borderDash: [5,5], borderWidth: 2, spanGaps: true },
+                    { label: 'D2 Pace Gap', data: getGap(compDriver2Data, 'gapPaceMs'), borderColor: '#dc3545', borderWidth: 2, spanGaps: true },
+                    { label: 'D2 Qualy Gap', data: getGap(compDriver2Data, 'qualyGapMs'), borderColor: '#dc3545', borderDash: [5,5], borderWidth: 2, spanGaps: true },
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+        });
+    }
+
+    function renderCompTelemetry() {
+        const track = document.getElementById('compRaceSelector').value;
+        const ctx = document.getElementById('chartCompLaps').getContext('2d');
+        if (chartCompLapsInst) chartCompLapsInst.destroy();
+
+        const s1 = compDriver1Data.find(h => h.sessionName === track);
+        const s2 = compDriver2Data.find(h => h.sessionName === track);
+
+        let maxLaps = Math.max(s1?.laps.length || 0, s2?.laps.length || 0);
+        const labels = Array.from({length: maxLaps}, (_, i) => `L${i + 1}`);
+
+        chartCompLapsInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'D1 Clean Laps', data: (s1?.laps||[]).map(l => l.is_incident ? null : l.time_ms / 1000), borderColor: '#0d6efd', spanGaps: true },
+                    { label: 'D2 Clean Laps', data: (s2?.laps||[]).map(l => l.is_incident ? null : l.time_ms / 1000), borderColor: '#dc3545', spanGaps: true }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${msToTimeStr(ctx.raw * 1000)}` } } }
+            }
+        });
+    }
+
+    // --- DRIVER PROFILE (Individual) ---
     function openDriverProfile(driverName) {
-        ['view-global', 'view-session', 'view-hof'].forEach(v => document.getElementById(v).classList.add('d-none'));
+        ['view-global', 'view-session', 'view-hof', 'view-compare'].forEach(v => document.getElementById(v).classList.add('d-none'));
         document.getElementById('view-driver').classList.remove('d-none');
         document.getElementById('viewSelector').value = 'global'; 
 
@@ -430,12 +739,9 @@
                         sessionName: cleanTrackName, 
                         pos: result.pos, pacePos: result.pace_pos, qualyPos: result.qualy_pos,
                         laps: result.lap_history, avgLapMs: result.avg_lap_ms,
-                        
-                        // CORRECCIÓN MAGISTRAL: Convertimos a null si la info string dice "-", si no, pasamos el número (incluso si es 0).
                         gapPaceMs: result.gap_pace === "-" ? null : result.gap_pace_ms, 
                         gapBestMs: result.gap_best === "-" ? null : result.gap_best_ms, 
                         qualyGapMs: result.qualy_gap === "-" ? null : result.qualy_gap_ms,
-                        
                         winnerData: winner ? winner : null
                     });
                 }
@@ -457,19 +763,19 @@
         }
 
         currentDriverData = raceHistory;
-        renderPositionChart(raceHistory);
-        renderIncidentEvolutionChart(raceHistory);
-        renderGapEvolutionChart(raceHistory); 
+        renderProfilePositionChart(raceHistory);
+        renderProfileIncidentEvolutionChart(raceHistory);
+        renderProfileGapEvolutionChart(raceHistory); 
 
         const raceSelector = document.getElementById('driverRaceSelector');
         raceSelector.innerHTML = "";
         raceHistory.forEach((race, idx) => raceSelector.add(new Option(race.sessionName, idx)));
         
-        if(raceHistory.length > 0) renderRaceAnalysis();
+        if(raceHistory.length > 0) renderProfileRaceAnalysis();
         else document.getElementById('incident-log').innerHTML = "<p>No completed races to analyze.</p>";
     }
 
-    function renderPositionChart(history) {
+    function renderProfilePositionChart(history) {
         const ctx = document.getElementById('chartPositions').getContext('2d');
         if (chartPosInstance) chartPosInstance.destroy();
 
@@ -487,7 +793,7 @@
         });
     }
 
-    function renderIncidentEvolutionChart(history) {
+    function renderProfileIncidentEvolutionChart(history) {
         const ctx = document.getElementById('chartIncidentsTime').getContext('2d');
         if (chartIncTimeInstance) chartIncTimeInstance.destroy();
 
@@ -516,11 +822,10 @@
         });
     }
 
-    function renderGapEvolutionChart(history) {
+    function renderProfileGapEvolutionChart(history) {
         const ctx = document.getElementById('chartGapsEvolution').getContext('2d');
         if (chartGapsEvolutionInstance) chartGapsEvolutionInstance.destroy();
 
-        // AQUÍ ESTÁ LA CORRECCIÓN: Si ms es exactamente 0.000, ahora SÍ pasará el filtro porque solo descartamos los que llegan como null
         const processGap = (ms, trackName) => {
             if (ms === undefined || ms === null) return null;
             let secs = ms / 1000;
@@ -541,7 +846,7 @@
         });
     }
 
-    function renderRaceAnalysis() {
+    function renderProfileRaceAnalysis() {
         const data = currentDriverData[document.getElementById('driverRaceSelector').value];
         const ctx = document.getElementById('chartLaps').getContext('2d');
         if (chartLapInstance) chartLapInstance.destroy();
@@ -578,6 +883,7 @@
         log.innerHTML = totalMs === 0 ? `<div class="alert alert-success p-2 text-center">🏎️ Flawless Race! Zero incidents.</div>` : `<div class="alert alert-danger p-2 mb-2 shadow-sm text-center"><strong>Total Time Lost:</strong> +${(totalMs/1000).toFixed(2)}s</div>${html}`;
     }
 
+    // --- SESSION VIEW LOGIC ---
     function renderRaceCharts(session) {
         const renderBar = (id, validDrivers, valFunc, labelFunc, isPoleFunc) => {
             const ctx = document.getElementById(id).getContext('2d');
@@ -615,6 +921,9 @@
         const rBody = document.getElementById('table-session-race');
         rBody.innerHTML = ""; 
         session.results.forEach(r => {
+            const isGlobal = fullData.global.some(d => d.name === r.name);
+            const nameHtml = isGlobal ? `<span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span>` : `<span class="text-muted fw-bold">${r.name}</span>`;
+
             const stylePace = r.gap_pace === 'PACE REF' ? `<span class="badge badge-purple">PACE REF</span>` : (r.gap_pace.includes('+') ? `<span class="gap-plus">${r.gap_pace}</span>` : r.gap_pace);
             const styleBest = r.gap_best === 'BEST LAP' ? `<span class="badge badge-purple">BEST LAP</span>` : (r.gap_best.includes('+') ? `<span class="gap-plus">${r.gap_best}</span>` : r.gap_best);
             let netQ = r.net_vs_q > 0 ? `<span class="text-success fw-bold">+${r.net_vs_q}</span>` : r.net_vs_q < 0 ? `<span class="text-danger fw-bold">${r.net_vs_q}</span>` : "-";
@@ -625,7 +934,7 @@
                     <td>${r.qualy_pos !== "-" ? 'P'+r.qualy_pos : '-'}</td>
                     <td>${r.pace_pos !== "-" ? 'P'+r.pace_pos : '-'}</td>
                     <td class="text-center">${netQ}</td>
-                    <td class="fw-bold"><span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span></td>
+                    <td class="fw-bold">${nameHtml}</td>
                     <td><small class="text-muted">${carNames[r.car_model]||"Unknown"}</small></td>
                     <td class="fw-bold">${r.points}</td>
                     <td>${r.laps}</td>
@@ -641,11 +950,14 @@
         qBody.innerHTML = "";
         if(session.qualy_results) {
             session.qualy_results.forEach(r => {
+                const isGlobal = fullData.global.some(d => d.name === r.name);
+                const nameHtml = isGlobal ? `<span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span>` : `<span class="text-muted fw-bold">${r.name}</span>`;
+
                 const styleGap = r.gap_pole === 'POLE' ? `<span class="badge badge-purple">POLE</span>` : (r.gap_pole.includes('+') ? `<span class="gap-plus">${r.gap_pole}</span>` : r.gap_pole);
                 qBody.innerHTML += `
                     <tr>
                         <td class="fw-bold">${r.pos}</td>
-                        <td class="fw-bold text-start"><span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span></td>
+                        <td class="fw-bold text-start">${nameHtml}</td>
                         <td><small class="text-muted">${carNames[r.car_model]||"Unknown"}</small></td>
                         <td class="fw-bold">${r.best_lap}</td>
                         <td>${styleGap}</td>
