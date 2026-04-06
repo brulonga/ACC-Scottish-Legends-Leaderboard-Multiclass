@@ -19,14 +19,12 @@
         .text-small { font-size: 0.85em; color: #6c757d; }
         .sortable { cursor: pointer; user-select: none; transition: background 0.2s; }
         .sortable:hover { background-color: #3b4248 !important; }
-        .sort-icon { font-size: 0.8em; margin-left: 5px; color: #adb5bd; }
         .driver-link { cursor: pointer; color: #0d6efd; text-decoration: none; transition: 0.2s; }
         .driver-link:hover { text-decoration: underline; color: #0a58ca; }
         
         .chart-container { position: relative; height: 320px; width: 100%; }
         .incident-list { max-height: 320px; overflow-y: auto; background: #fff; border: 1px solid #dee2e6; border-radius: 5px; padding: 10px; font-size: 0.9em;}
         .incident-item { border-bottom: 1px solid #f1f3f5; padding: 5px 0; }
-        .incident-item:last-child { border-bottom: none; }
         
         .stat-badge { background: #e9ecef; color: #495057; padding: 5px 10px; border-radius: 15px; font-size: 0.85em; font-weight: 600; margin-right: 8px; display: inline-block; margin-bottom: 5px;}
         .promo-box { border-left: 4px solid #0d6efd; background-color: #f8f9fa; padding: 10px 15px; border-radius: 4px; }
@@ -43,9 +41,16 @@
 <div class="container mb-5">
     
     <div class="nav-header mb-3">
-        <h3 class="m-0">🏆 Scottish Legends - Monday's Marathon</h3>
-        <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-primary fw-bold" onclick="openCompareSelection()">🆚 Compare</button>
+        <h3 class="m-0">🏆 Scottish Legends</h3>
+        
+        <div class="d-flex align-items-center gap-3">
+            <select id="classSelector" class="form-select w-auto bg-primary text-white border-0 fw-bold" onchange="applyClassFilter()">
+                <option value="GT3">🏎️ GT3 Class</option>
+                <option value="GT4">🚗 GT4 Class</option>
+            </select>
+
+            <button class="btn btn-light fw-bold text-primary" onclick="openCompareSelection()">🆚 Compare</button>
+            
             <select id="viewSelector" class="form-select w-auto bg-dark text-white border-secondary" onchange="switchView()">
                 <option value="global">🌍 Championship Standings</option>
                 <option value="hof">🏛️ Hall of Fame</option>
@@ -54,7 +59,7 @@
     </div>
 
     <div id="view-global" class="card p-3">
-        <h4 class="mb-3 text-secondary">Overall Standings</h4>
+        <h4 class="mb-3 text-secondary" id="global-title">Overall Standings</h4>
         <div class="table-responsive">
             <table class="table table-hover align-middle" style="font-size: 0.9em;">
                 <thead class="table-dark">
@@ -74,22 +79,14 @@
                 <tbody id="table-global"></tbody>
             </table>
         </div>
-        
         <div class="mt-4 text-muted text-small">
             <p class="mb-1">* <strong>Net vs Qualy / Pace:</strong> Total positions gained or lost across the season vs starting grid / theoretical pace.</p>
-            <p class="mb-1">* To be classified, drivers must complete at least 50% of the leader's laps. Drivers below 50% (DNF) are excluded from these standings.</p>
-            <p class="mb-1">* Nürburgring 24h race is excluded from 'Avg Gap' stats due to its unusually long lap time.</p>
-            <p class="mb-3">* <strong>Incidents:</strong> Laps that fall outside 107% of the session's overall best lap.</p>
-            
-            <div class="promo-box mt-3 text-dark">
-                <p class="mb-1">📺 <strong>Watch replays:</strong> You can watch some of the races from this server on demand at <a href="https://www.youtube.com/@foxfaceracing" target="_blank" class="fw-bold text-decoration-none">@foxfaceracing</a></p>
-                <p class="mb-0">🏎️ <strong>More content:</strong> Follow <a href="https://www.youtube.com/@TheRookieDriver-LFM" target="_blank" class="fw-bold text-decoration-none">@TheRookieDriver-LFM</a> for more Scottish Legend Server and LFM content!</p>
-            </div>
+            <p class="mb-1">* To be classified, drivers must complete at least 50% of the class leader's laps. Drivers below 50% (DNF) are excluded from these standings.</p>
         </div>
     </div>
 
     <div id="view-hof" class="card p-3 d-none">
-        <h4 class="mb-4 text-secondary text-center">🏛️ Track Records & Hall of Fame</h4>
+        <h4 class="mb-4 text-secondary text-center" id="hof-title">🏛️ Track Records & Hall of Fame</h4>
         <div class="table-responsive">
             <table class="table table-hover align-middle text-center" style="font-size: 0.95em;">
                 <thead class="table-dark">
@@ -115,7 +112,7 @@
     <div id="view-session" class="card p-3 d-none">
         <div class="d-flex justify-content-between align-items-center mb-2">
             <h4 class="text-secondary m-0" id="session-title">Race Details</h4>
-            <span class="badge bg-primary">Official Results</span>
+            <span class="badge bg-primary" id="session-class-badge">GT3 Class</span>
         </div>
         
         <div class="border-bottom mb-3">
@@ -146,7 +143,8 @@
                             <th>Car</th>
                             <th>Pts</th>
                             <th>Laps</th>
-                            <th>Race Gap</th> <th>Inc</th>
+                            <th>Race Gap</th>
+                            <th>Inc</th>
                             <th>Avg Lap</th>
                             <th>Pace Gap</th>
                             <th>Best Lap</th>
@@ -223,9 +221,7 @@
                 <div class="chart-container" style="height: 280px;"><canvas id="chartGapsEvolution"></canvas></div>
             </div>
         </div>
-
         <hr class="mb-4">
-
         <div class="row">
             <div class="col-lg-8 mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -245,7 +241,7 @@
 
     <div id="view-compare" class="card p-4 d-none bg-light">
         <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
-            <h3 class="m-0 text-secondary">Head-to-Head Comparison</h3>
+            <h3 class="m-0 text-secondary" id="compare-title">Head-to-Head Comparison</h3>
             <button class="btn btn-outline-secondary btn-sm" onclick="document.getElementById('viewSelector').value='global'; switchView();">🔙 Back to Standings</button>
         </div>
 
@@ -299,11 +295,13 @@
 
 <script>
     let fullData = null;
+    let currentClass = 'GT3'; // EL ESTADO GLOBAL DE CATEGORÍA
+    let filteredGlobal = []; // La lista global filtrada por categoría actual
+
     let currentSort = { column: 'points', asc: false }; 
     let chartPosInstance, chartLapInstance, chartIncTimeInstance;
     let chartRacePaceInstance, chartRaceBestInstance, chartQualyGapsInstance;
     let chartGapsEvolutionInstance;
-    
     let chartCompPosInst, chartCompIncInst, chartCompGapsInst, chartCompLapsInst;
 
     let currentDriverData = null; 
@@ -322,16 +320,18 @@
         25: "Mercedes-AMG GT3 '20", 26: "Ferrari 488 Challenge Evo", 27: "BMW M2 CS Racing",
         28: "Porsche 911 GT3 Cup (992)", 29: "Lamborghini Huracan ST EVO2", 30: "BMW M4 GT3",
         31: "Audi R8 LMS Evo II", 32: "Ferrari 296 GT3", 33: "Lamborghini Huracan GT3 Evo2",
-        34: "Porsche 911 GT3 R (992)", 35: "McLaren 720S GT3 Evo", 36: "Ford Mustang GT3"
+        34: "Porsche 911 GT3 R (992)", 35: "McLaren 720S GT3 Evo", 36: "Ford Mustang GT3",
+        50: "Alpine A110 GT4", 51: "Aston Martin V8 Vantage GT4", 52: "Audi R8 LMS GT4", 
+        53: "BMW M4 GT4", 54: "Chevrolet Camaro GT4.R", 55: "Ginetta G55 GT4", 56: "KTM X-Bow GT4", 
+        57: "Maserati V8 GranTurismo GT4", 58: "McLaren 570S GT4", 59: "Mercedes-AMG GT4", 60: "Porsche 718 Cayman GT4"
     };
 
     fetch('dashboard_data.json?v=' + new Date().getTime())
         .then(response => response.json())
         .then(data => {
             fullData = data;
-            renderGlobalTable(); 
+            applyClassFilter(); // Aplica el filtro inicial (GT3) y renderiza todo
             initDropdown();
-            renderHallOfFame();
         })
         .catch(err => console.error("Error loading JSON:", err));
 
@@ -343,18 +343,41 @@
         return `${minutes}:${seconds.toString().padStart(2, '0')}.${milis.toString().padStart(3, '0')}`;
     }
 
+    // --- EL CORAZÓN DEL MULTICLASE ---
+    function applyClassFilter() {
+        currentClass = document.getElementById('classSelector').value;
+        
+        // Filtrar datos globales por la clase seleccionada
+        filteredGlobal = fullData.global.filter(d => d.car_class === currentClass);
+        
+        // Refrescar la vista actual para que refleje la nueva clase
+        document.getElementById('global-title').innerText = `${currentClass} Overall Standings`;
+        document.getElementById('hof-title').innerText = `🏛️ ${currentClass} Hall of Fame`;
+        document.getElementById('compare-title').innerText = `${currentClass} Head-to-Head Comparison`;
+        
+        sortData(currentSort.column, true); // Forzar re-render de la tabla global
+        
+        if (!document.getElementById('view-hof').classList.contains('d-none')) renderHallOfFame();
+        if (!document.getElementById('view-compare').classList.contains('d-none')) openCompareSelection();
+        
+        const currentSessionIdx = document.getElementById('viewSelector').value;
+        if (currentSessionIdx !== "global" && currentSessionIdx !== "hof") {
+            loadSession(fullData.sessions[currentSessionIdx]);
+        }
+    }
+
     function renderGlobalTable() {
         const tGlobal = document.getElementById('table-global');
         tGlobal.innerHTML = ""; 
         
-        fullData.global.forEach((p, index) => {
+        filteredGlobal.forEach((p, index) => {
             let netPace = p.net_pos_gained > 0 ? `<span class="text-success fw-bold">+${p.net_pos_gained}</span>` : p.net_pos_gained < 0 ? `<span class="text-danger fw-bold">${p.net_pos_gained}</span>` : `<span class="text-muted">0</span>`;
             let netQualy = p.net_pos_gained_qualy > 0 ? `<span class="text-success fw-bold">+${p.net_pos_gained_qualy}</span>` : p.net_pos_gained_qualy < 0 ? `<span class="text-danger fw-bold">${p.net_pos_gained_qualy}</span>` : `<span class="text-muted">0</span>`;
 
             tGlobal.innerHTML += `
                 <tr>
                     <td>${index + 1}</td>
-                    <td class="fw-bold"><span class="driver-link" onclick="openDriverProfile('${p.name}')">${p.name}</span></td>
+                    <td class="fw-bold"><span class="driver-link" onclick="openDriverProfile('${p.name}', '${p.car_class}')">${p.name}</span></td>
                     <td class="fs-5 fw-bold-num">${p.points}</td>
                     <td class="text-center">${netQualy}</td>
                     <td class="text-center">${netPace}</td>
@@ -368,18 +391,20 @@
         });
     }
 
-    function sortData(column) {
-        if (currentSort.column === column) currentSort.asc = !currentSort.asc;
-        else { currentSort.column = column; currentSort.asc = (column === 'name' || column.includes('gap') || column.includes('pos')); }
+    function sortData(column, force = false) {
+        if (!force) {
+            if (currentSort.column === column) currentSort.asc = !currentSort.asc;
+            else { currentSort.column = column; currentSort.asc = (column === 'name' || column.includes('gap') || column.includes('pos')); }
+        }
 
-        fullData.global.sort((a, b) => {
-            let valA = a[column]; let valB = b[column];
+        filteredGlobal.sort((a, b) => {
+            let valA = a[currentSort.column]; let valB = b[currentSort.column];
             if (typeof valA === 'string' && valA.includes('+')) valA = parseFloat(valA.replace('+', ''));
             if (typeof valB === 'string' && valB.includes('+')) valB = parseFloat(valB.replace('+', ''));
             if (valA === '-' || valA === undefined) valA = Infinity;
             if (valB === '-' || valB === undefined) valB = Infinity;
             
-            if (column === 'name') return currentSort.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+            if (currentSort.column === 'name') return currentSort.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
             
             if (valA < valB) return currentSort.asc ? -1 : 1;
             if (valA > valB) return currentSort.asc ? 1 : -1;
@@ -400,7 +425,10 @@
         ['view-global', 'view-session', 'view-driver', 'view-hof', 'view-compare'].forEach(v => document.getElementById(v).classList.add('d-none'));
 
         if (value === "global") document.getElementById('view-global').classList.remove('d-none');
-        else if (value === "hof") document.getElementById('view-hof').classList.remove('d-none');
+        else if (value === "hof") {
+            document.getElementById('view-hof').classList.remove('d-none');
+            renderHallOfFame();
+        }
         else {
             document.getElementById('view-session').classList.remove('d-none');
             loadSession(fullData.sessions[value]);
@@ -422,19 +450,23 @@
         tbody.innerHTML = "";
         
         for (const [trackId, data] of Object.entries(fullData.hall_of_fame)) {
-            let hasQualy = data.qualy && data.qualy.time_ms;
-            let hasRace = data.race && data.race.time_ms;
+            // Accedemos a los récords de la categoría actual
+            let classData = data[currentClass];
+            if (!classData) continue;
+
+            let hasQualy = classData.qualy && classData.qualy.time_ms;
+            let hasRace = classData.race && classData.race.time_ms;
             if(!hasQualy && !hasRace) continue;
 
-            let qTime = hasQualy ? msToTimeStr(data.qualy.time_ms) : "-";
-            let qDriver = hasQualy ? data.qualy.driver : "-";
-            let qCar = hasQualy ? (carNames[data.qualy.car] || "Unknown") : "-";
-            let qCond = hasQualy ? (data.qualy.wet === 1 ? "🌧️ Wet" : "☀️ Dry") : "-";
+            let qTime = hasQualy ? msToTimeStr(classData.qualy.time_ms) : "-";
+            let qDriver = hasQualy ? classData.qualy.driver : "-";
+            let qCar = hasQualy ? (carNames[classData.qualy.car] || "Unknown") : "-";
+            let qCond = hasQualy ? (classData.qualy.wet === 1 ? "🌧️ Wet" : "☀️ Dry") : "-";
 
-            let rTime = hasRace ? msToTimeStr(data.race.time_ms) : "-";
-            let rDriver = hasRace ? data.race.driver : "-";
-            let rCar = hasRace ? (carNames[data.race.car] || "Unknown") : "-";
-            let rCond = hasRace ? (data.race.wet === 1 ? "🌧️ Wet" : "☀️ Dry") : "-";
+            let rTime = hasRace ? msToTimeStr(classData.race.time_ms) : "-";
+            let rDriver = hasRace ? classData.race.driver : "-";
+            let rCar = hasRace ? (carNames[classData.race.car] || "Unknown") : "-";
+            let rCond = hasRace ? (classData.race.wet === 1 ? "🌧️ Wet" : "☀️ Dry") : "-";
 
             tbody.innerHTML += `
                 <tr>
@@ -450,14 +482,14 @@
         }
     }
 
-    function extractDriverHistory(driverName) {
+    function extractDriverHistory(driverName, driverClass) {
         let history = [];
         fullData.sessions.forEach(session => {
             const parts = session.name.split(':');
             const cleanTrackName = parts.length > 1 ? parts[1].trim() : session.name;
-            const result = session.results.find(r => r.name === driverName);
+            const result = session.results.find(r => r.name === driverName && r.car_class === driverClass);
             if (result) {
-                const winner = session.results.find(r => r.pos === 1 || r.pos === "1");
+                const winner = session.results.find(r => (r.pos === 1 || r.pos === "1") && r.car_class === driverClass);
                 history.push({
                     sessionName: cleanTrackName,
                     pos: result.pos, pacePos: result.pace_pos, qualyPos: result.qualy_pos,
@@ -482,16 +514,16 @@
         const sel2 = document.getElementById('comp-driver2');
         sel1.innerHTML = ""; sel2.innerHTML = "";
         
-        let drivers = [...fullData.global].sort((a,b) => a.name.localeCompare(b.name));
+        let drivers = [...filteredGlobal].sort((a,b) => a.name.localeCompare(b.name)); // Filtrados por clase
         
         drivers.forEach(d => {
             sel1.add(new Option(d.name, d.name));
             sel2.add(new Option(d.name, d.name));
         });
 
-        if (fullData.global.length > 1) {
-            sel1.value = fullData.global[0].name;
-            sel2.value = fullData.global[1].name;
+        if (drivers.length > 1) {
+            sel1.value = drivers[0].name;
+            sel2.value = drivers[1].name;
         }
     }
 
@@ -504,11 +536,11 @@
             return;
         }
 
-        const d1Stats = fullData.global.find(d => d.name === d1Name);
-        const d2Stats = fullData.global.find(d => d.name === d2Name);
+        const d1Stats = filteredGlobal.find(d => d.name === d1Name);
+        const d2Stats = filteredGlobal.find(d => d.name === d2Name);
         
-        compDriver1Data = extractDriverHistory(d1Name);
-        compDriver2Data = extractDriverHistory(d2Name);
+        compDriver1Data = extractDriverHistory(d1Name, currentClass);
+        compDriver2Data = extractDriverHistory(d2Name, currentClass);
 
         document.getElementById('comp-results').classList.remove('d-none');
 
@@ -679,13 +711,13 @@
     }
 
     // --- DRIVER PROFILE (Individual) ---
-    function openDriverProfile(driverName) {
+    function openDriverProfile(driverName, carClass) {
         ['view-global', 'view-session', 'view-hof', 'view-compare'].forEach(v => document.getElementById(v).classList.add('d-none'));
         document.getElementById('view-driver').classList.remove('d-none');
         document.getElementById('viewSelector').value = 'global'; 
 
-        const globalStats = fullData.global.find(d => d.name === driverName);
-        document.getElementById('driver-name').innerText = driverName;
+        const globalStats = fullData.global.find(d => d.name === driverName && d.car_class === carClass);
+        document.getElementById('driver-name').innerHTML = `${driverName} <span class="badge bg-secondary fs-5 align-middle">${carClass}</span>`;
         
         const favCarName = carNames[globalStats.favorite_car] || "Unknown Car";
         document.getElementById('driver-quick-stats').innerHTML = `
@@ -694,13 +726,13 @@
             <span class="stat-badge">⏱️ Avg Qualy Pos: P${globalStats.avg_qualy_pos}</span>
         `;
 
-        let raceHistory = extractDriverHistory(driverName);
+        let raceHistory = extractDriverHistory(driverName, carClass);
         
         let pbData = {}; 
         fullData.sessions.forEach(session => {
             const parts = session.name.split(':');
             const cleanTrackName = parts.length > 1 ? parts[1].trim() : session.name;
-            const result = session.results.find(r => r.name === driverName);
+            const result = session.results.find(r => r.name === driverName && r.car_class === carClass);
             
             if (result) { 
                 if (!pbData[cleanTrackName]) pbData[cleanTrackName] = { qualy: Infinity, race: Infinity };
@@ -845,7 +877,7 @@
     }
 
     // --- SESSION VIEW LOGIC ---
-    function renderRaceCharts(session) {
+    function renderRaceCharts(filteredResults, filteredQualy) {
         const renderBar = (id, validDrivers, valFunc, labelFunc, isPoleFunc) => {
             const ctx = document.getElementById(id).getContext('2d');
             if (window[id+'Inst']) window[id+'Inst'].destroy();
@@ -862,35 +894,40 @@
             });
         };
 
-        let paceDrivers = session.results.filter(r => r.pos !== "DNF" && r.gap_pace_ms !== undefined).sort((a, b) => a.gap_pace_ms - b.gap_pace_ms);
+        let paceDrivers = filteredResults.filter(r => r.pos !== "DNF" && r.gap_pace_ms !== undefined).sort((a, b) => a.gap_pace_ms - b.gap_pace_ms);
         renderBar('chartRacePace', paceDrivers, d => d.gap_pace_ms/1000, ctx => ctx.raw===0?'PACE REF':`+${ctx.raw.toFixed(3)}s`, d => d.gap_pace_ms===0);
         
-        let bestDrivers = session.results.filter(r => r.pos !== "DNF" && r.gap_best_ms !== undefined).sort((a, b) => a.gap_best_ms - b.gap_best_ms);
+        let bestDrivers = filteredResults.filter(r => r.pos !== "DNF" && r.gap_best_ms !== undefined).sort((a, b) => a.gap_best_ms - b.gap_best_ms);
         renderBar('chartRaceBest', bestDrivers, d => d.gap_best_ms/1000, ctx => ctx.raw===0?'BEST LAP':`+${ctx.raw.toFixed(3)}s`, d => d.gap_best_ms===0);
 
-        if (session.qualy_results && session.qualy_results.length > 0) {
-            let qDrivers = session.qualy_results.filter(r => r.gap_pole_ms !== undefined).sort((a, b) => a.gap_pole_ms - b.gap_pole_ms);
+        if (filteredQualy && filteredQualy.length > 0) {
+            let qDrivers = filteredQualy.filter(r => r.gap_pole_ms !== undefined).sort((a, b) => a.gap_pole_ms - b.gap_pole_ms);
             renderBar('chartQualyGaps', qDrivers, d => d.gap_pole_ms/1000, ctx => ctx.raw===0?'POLE':`+${ctx.raw.toFixed(3)}s`, d => d.gap_pole_ms===0);
         }
     }
 
     function loadSession(session) {
         document.getElementById('session-title').innerText = session.name;
+        document.getElementById('session-class-badge').innerText = `${currentClass} Class`;
+        
         switchSessionTab('race'); 
-        renderRaceCharts(session);
+        
+        // FILTRAR POR CLASE ACTUAL
+        const classResults = session.results.filter(r => r.car_class === currentClass);
+        const classQualy = session.qualy_results ? session.qualy_results.filter(r => r.car_class === currentClass) : [];
+        
+        renderRaceCharts(classResults, classQualy);
 
         const rBody = document.getElementById('table-session-race');
         rBody.innerHTML = ""; 
-        session.results.forEach(r => {
-            const isGlobal = fullData.global.some(d => d.name === r.name);
+        classResults.forEach(r => {
+            const isGlobal = fullData.global.some(d => d.name === r.name && d.car_class === currentClass);
             const penHtml = r.penalty > 0 ? `<span class="badge bg-danger rounded-pill py-0 px-1 ms-1">+${r.penalty}s</span>` : "";
-            const nameHtml = isGlobal ? `<span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span>${penHtml}` : `<span class="text-muted fw-bold">${r.name}</span>${penHtml}`;
+            const nameHtml = isGlobal ? `<span class="driver-link" onclick="openDriverProfile('${r.name}', '${currentClass}')">${r.name}</span>${penHtml}` : `<span class="text-muted fw-bold">${r.name}</span>${penHtml}`;
 
             const stylePace = r.gap_pace === 'PACE REF' ? `<span class="badge badge-purple">PACE REF</span>` : (r.gap_pace.includes('+') ? `<span class="gap-plus">${r.gap_pace}</span>` : r.gap_pace);
             const styleBest = r.gap_best === 'BEST LAP' ? `<span class="badge badge-purple">BEST LAP</span>` : (r.gap_best.includes('+') ? `<span class="gap-plus">${r.gap_best}</span>` : r.gap_best);
             let netQ = r.net_vs_q > 0 ? `<span class="text-success fw-bold">+${r.net_vs_q}</span>` : r.net_vs_q < 0 ? `<span class="text-danger fw-bold">${r.net_vs_q}</span>` : "-";
-            
-            // EL RACE GAP (Ganador, +X.XXXs, o +1 Lap) QUE CALCULAMOS EN PYTHON SE AÑADE AQUÍ
             const styleRaceGap = r.race_gap === "WINNER" ? `<span class="badge badge-winner">WINNER</span>` : (r.race_gap.includes('+') ? `<span class="gap-plus">${r.race_gap}</span>` : r.race_gap);
 
             rBody.innerHTML += `
@@ -914,10 +951,10 @@
 
         const qBody = document.getElementById('table-session-qualy');
         qBody.innerHTML = "";
-        if(session.qualy_results) {
-            session.qualy_results.forEach(r => {
-                const isGlobal = fullData.global.some(d => d.name === r.name);
-                const nameHtml = isGlobal ? `<span class="driver-link" onclick="openDriverProfile('${r.name}')">${r.name}</span>` : `<span class="text-muted fw-bold">${r.name}</span>`;
+        if(classQualy.length > 0) {
+            classQualy.forEach(r => {
+                const isGlobal = fullData.global.some(d => d.name === r.name && d.car_class === currentClass);
+                const nameHtml = isGlobal ? `<span class="driver-link" onclick="openDriverProfile('${r.name}', '${currentClass}')">${r.name}</span>` : `<span class="text-muted fw-bold">${r.name}</span>`;
 
                 const styleGap = r.gap_pole === 'POLE' ? `<span class="badge badge-purple">POLE</span>` : (r.gap_pole.includes('+') ? `<span class="gap-plus">${r.gap_pole}</span>` : r.gap_pole);
                 qBody.innerHTML += `
@@ -929,6 +966,8 @@
                         <td>${styleGap}</td>
                     </tr>`;
             });
+        } else {
+            qBody.innerHTML = `<tr><td colspan="5" class="text-muted">No Qualifying Data for ${currentClass}</td></tr>`;
         }
     }
 </script>

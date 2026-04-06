@@ -9,45 +9,7 @@ OUTPUT_FILE = "dashboard_data.json"
 
 PENALTIES = {
     "nurburgring_24h": {
-    },
-
-    "mount_panorama": {
-    },
-
-    "hungaroring": {
-    },
-
-    "valencia": {
-    },
-
-    "imola": {
-
-        "Just Wild": 5, 
-
-        "Berat Budak": 30,
-
-        "keVin peeters": 5
-
-    },
-
-    "zandvoort": {
-
-        "anthony gaben": 15,
-
-        "Luca Maggiolo": 20,
-
-        "Tom Scheidema": 20,
-
-        "Cla Rens": 5,
-
-        "Berat Budak": 15,
-
-        "Valentin Loose": 800,
-
-        "Bruno Longarela": 5
-
     }
-
 }
 
 POINTS_SYSTEM = {
@@ -139,11 +101,18 @@ def load_and_process():
         race_leaderboard = race_data['sessionResult']['leaderBoardLines']
         race_is_wet = race_data['sessionResult'].get('isWetSession', 0)
 
+        # Inicializar Hall of Fame multiclase
         if track_name not in hall_of_fame:
             hall_of_fame[track_name] = {
                 "name": track_name.replace('_', ' ').title(),
-                "qualy": {"time_ms": 2000000000, "driver": "-", "car": 0, "wet": 0},
-                "race": {"time_ms": 2000000000, "driver": "-", "car": 0, "wet": 0}
+                "GT3": {
+                    "qualy": {"time_ms": 2000000000, "driver": "-", "car": 0, "wet": 0},
+                    "race": {"time_ms": 2000000000, "driver": "-", "car": 0, "wet": 0}
+                },
+                "GT4": {
+                    "qualy": {"time_ms": 2000000000, "driver": "-", "car": 0, "wet": 0},
+                    "race": {"time_ms": 2000000000, "driver": "-", "car": 0, "wet": 0}
+                }
             }
 
         # APLICAR PENALIZACIONES
@@ -160,8 +129,16 @@ def load_and_process():
 
         race_leaderboard.sort(key=custom_sort_leaderboard)
 
+        # MAPEAR ID COCHE A CLASE PARA TODO EL PROCESO
+        car_id_to_class = {}
+        for line in race_leaderboard:
+            cid = line['car']['carId']
+            cgroup = line['car']['carGroup']
+            car_id_to_class[cid] = "GT4" if cgroup == "GT4" else "GT3"
+
+        # --- PROCESAR QUALY MULTICLASE ---
         qualy_dict = {}
-        qualy_pole_ms = 2000000000
+        qualy_pole_ms = {"GT3": 2000000000, "GT4": 2000000000}
         
         q_data = None
         if track_name in qualy_sessions_by_track and len(qualy_sessions_by_track[track_name]) > 0:
@@ -171,54 +148,69 @@ def load_and_process():
             q_leaderboard = q_data['sessionResult']['leaderBoardLines']
             q_is_wet = q_data['sessionResult'].get('isWetSession', 0)
             
+            # 1. Encontrar Poles por clase
             for line in q_leaderboard:
+                c_class = "GT4" if line['car']['carGroup'] == "GT4" else "GT3"
                 bl = line['timing']['bestLap']
-                if bl < 2000000000 and bl < qualy_pole_ms:
-                    qualy_pole_ms = bl
+                if bl < 2000000000 and bl < qualy_pole_ms[c_class]:
+                    qualy_pole_ms[c_class] = bl
 
-            valid_q_pos = 1
+            # 2. Asignar gaps y posiciones por clase
+            valid_q_pos = {"GT3": 1, "GT4": 1}
             for line in q_leaderboard:
+                c_class = "GT4" if line['car']['carGroup'] == "GT4" else "GT3"
                 driver_name = f"{line['currentDriver']['firstName']} {line['currentDriver']['lastName']}".strip()
                 q_time = line['timing']['bestLap']
                 
                 if q_time < 2000000000:
                     qualy_dict[driver_name] = {
-                        "pos": valid_q_pos,
+                        "pos": valid_q_pos[c_class],
                         "time_ms": q_time,
-                        "gap_ms": q_time - qualy_pole_ms if qualy_pole_ms < 2000000000 else 0
+                        "gap_ms": q_time - qualy_pole_ms[c_class] if qualy_pole_ms[c_class] < 2000000000 else 0
                     }
                     
-                    if q_time < hall_of_fame[track_name]["qualy"]["time_ms"]:
-                        hall_of_fame[track_name]["qualy"] = {
+                    if q_time < hall_of_fame[track_name][c_class]["qualy"]["time_ms"]:
+                        hall_of_fame[track_name][c_class]["qualy"] = {
                             "time_ms": q_time,
                             "driver": driver_name,
                             "car": line['car']['carModel'],
                             "wet": q_is_wet
                         }
-                    valid_q_pos += 1
+                    valid_q_pos[c_class] += 1
         
-        session_best_lap = 2000000000
-        max_laps_session = 0
+        # --- PROCESAR CARRERA MULTICLASE ---
+        session_best_lap = {"GT3": 2000000000, "GT4": 2000000000}
+        max_laps_session = {"GT3": 0, "GT4": 0}
 
         for line in race_leaderboard:
+            c_class = "GT4" if line['car']['carGroup'] == "GT4" else "GT3"
             timing = line['timing']
-            if timing['lapCount'] > max_laps_session:
-                max_laps_session = timing['lapCount']
-            if timing['bestLap'] < 2000000000 and timing['bestLap'] < session_best_lap:
-                session_best_lap = timing['bestLap']
+            if timing['lapCount'] > max_laps_session[c_class]:
+                max_laps_session[c_class] = timing['lapCount']
+            if timing['bestLap'] < 2000000000 and timing['bestLap'] < session_best_lap[c_class]:
+                session_best_lap[c_class] = timing['bestLap']
 
-        min_laps_required = max_laps_session * MIN_LAPS_PERCENTAGE
-        threshold_107 = session_best_lap * 1.07 if session_best_lap < 2000000000 else 0
+        min_laps_required = {
+            "GT3": max_laps_session["GT3"] * MIN_LAPS_PERCENTAGE,
+            "GT4": max_laps_session["GT4"] * MIN_LAPS_PERCENTAGE
+        }
+        
+        threshold_107 = {
+            "GT3": session_best_lap["GT3"] * 1.07 if session_best_lap["GT3"] < 2000000000 else 0,
+            "GT4": session_best_lap["GT4"] * 1.07 if session_best_lap["GT4"] < 2000000000 else 0
+        }
 
         car_laps_data = {}
         for lap in race_data.get('laps', []):
             cid = lap['carId']
             ltime = lap['laptime']
+            c_class = car_id_to_class.get(cid, "GT3")
+            
             if cid not in car_laps_data:
                 car_laps_data[cid] = {'valid_laps': [], 'incidents': 0, 'all_laps': []}
             
             if ltime < 2000000000:
-                is_incident = threshold_107 > 0 and ltime > threshold_107
+                is_incident = threshold_107[c_class] > 0 and ltime > threshold_107[c_class]
                 if not is_incident:
                     car_laps_data[cid]['valid_laps'].append(ltime)
                 else:
@@ -226,32 +218,33 @@ def load_and_process():
                 
                 car_laps_data[cid]['all_laps'].append({'time_ms': ltime, 'is_incident': is_incident})
 
-        session_best_avg_pace = 2000000000
+        session_best_avg_pace = {"GT3": 2000000000, "GT4": 2000000000}
         for line in race_leaderboard:
+            c_class = "GT4" if line['car']['carGroup'] == "GT4" else "GT3"
             timing = line['timing']
-            if timing['totalTime'] > 2000000000 or timing['lapCount'] < min_laps_required: continue
+            if timing['totalTime'] > 2000000000 or timing['lapCount'] < min_laps_required[c_class]: continue
 
             car_id = line['car']['carId']
             valid_laps = car_laps_data.get(car_id, {}).get('valid_laps', [])
             if valid_laps:
                 pace = sum(valid_laps) / len(valid_laps)
-                if pace < session_best_avg_pace:
-                    session_best_avg_pace = pace
+                if pace < session_best_avg_pace[c_class]:
+                    session_best_avg_pace[c_class] = pace
 
         temp_drivers = []
-        valid_pos_counter = 1 
+        valid_pos_counter = {"GT3": 1, "GT4": 1}
         seen_pids = set()
         
-        # Variables para calcular el Gap
-        leader_laps = 0
-        leader_time = 0
+        leader_laps = {"GT3": 0, "GT4": 0}
+        leader_time = {"GT3": 0, "GT4": 0}
 
         for line in race_leaderboard:
+            c_class = "GT4" if line['car']['carGroup'] == "GT4" else "GT3"
             timing = line['timing']
             driver = line['currentDriver']
             
             name = f"{driver['firstName']} {driver['lastName']}".strip() 
-            pid = name 
+            pid = f"{name}::{c_class}" # ID Único: Nombre + Clase
             
             if pid in seen_pids: continue
             seen_pids.add(pid)
@@ -264,36 +257,35 @@ def load_and_process():
             best_lap = timing['bestLap']
             penalty_applied = line.get('penalty_applied', 0)
 
-            is_classified = laps >= min_laps_required
-
+            is_classified = laps >= min_laps_required[c_class]
             race_gap_str = "-"
             
             if is_classified:
-                display_pos = valid_pos_counter
-                real_pos_num = valid_pos_counter
-                points = POINTS_SYSTEM.get(valid_pos_counter, 0)
+                display_pos = valid_pos_counter[c_class]
+                real_pos_num = valid_pos_counter[c_class]
+                points = POINTS_SYSTEM.get(valid_pos_counter[c_class], 0)
                 
-                # CALCULAR RACE GAP (Tiempo total final vs Ganador)
-                if valid_pos_counter == 1:
-                    leader_laps = laps
-                    leader_time = total_time
+                # CALCULAR RACE GAP POR CLASE
+                if valid_pos_counter[c_class] == 1:
+                    leader_laps[c_class] = laps
+                    leader_time[c_class] = total_time
                     race_gap_str = "WINNER"
                 else:
-                    if laps == leader_laps:
-                        gap_ms = total_time - leader_time
+                    if laps == leader_laps[c_class]:
+                        gap_ms = total_time - leader_time[c_class]
                         race_gap_str = f"+{gap_ms/1000:.3f}s"
                     else:
-                        laps_behind = leader_laps - laps
+                        laps_behind = leader_laps[c_class] - laps
                         race_gap_str = f"+{laps_behind} Lap{'s' if laps_behind > 1 else ''}"
 
-                if best_lap < 2000000000 and best_lap < hall_of_fame[track_name]["race"]["time_ms"]:
-                    hall_of_fame[track_name]["race"] = {
+                if best_lap < 2000000000 and best_lap < hall_of_fame[track_name][c_class]["race"]["time_ms"]:
+                    hall_of_fame[track_name][c_class]["race"] = {
                         "time_ms": best_lap,
                         "driver": name,
                         "car": car_model,
                         "wet": race_is_wet
                     }
-                valid_pos_counter += 1
+                valid_pos_counter[c_class] += 1
             else:
                 display_pos = "DNF"
                 real_pos_num = -1
@@ -308,20 +300,20 @@ def load_and_process():
             gap_pace_str = "-"
             current_pace_gap_ms = 0
             has_valid_pace_gap = False
-            if is_classified and avg_lap_driver_ms and session_best_avg_pace < 2000000000:
-                diff = avg_lap_driver_ms - session_best_avg_pace
+            if is_classified and avg_lap_driver_ms and session_best_avg_pace[c_class] < 2000000000:
+                diff = avg_lap_driver_ms - session_best_avg_pace[c_class]
                 gap_pace_str = f"+{diff/1000:.3f}" if diff > 0 else "PACE REF"
                 current_pace_gap_ms = diff
                 has_valid_pace_gap = True
 
             gap_best_str = "-"
             current_best_gap_ms = 0
-            if is_classified and best_lap < 2000000000 and session_best_lap < 2000000000:
-                diff = best_lap - session_best_lap
+            if is_classified and best_lap < 2000000000 and session_best_lap[c_class] < 2000000000:
+                diff = best_lap - session_best_lap[c_class]
                 gap_best_str = f"+{diff/1000:.3f}" if diff > 0 else "BEST LAP"
                 current_best_gap_ms = diff
 
-            q_info = qualy_dict.get(pid, None)
+            q_info = qualy_dict.get(name, None)
             q_pos = q_info['pos'] if q_info else "-"
             q_time_str = format_time(q_info['time_ms']) if q_info else "-"
             q_gap_ms = q_info['gap_ms'] if q_info else 0
@@ -330,9 +322,9 @@ def load_and_process():
             net_vs_q = q_pos - real_pos_num if is_classified and q_info and q_pos != "-" else "-"
 
             temp_drivers.append({
-                "pid": pid, "is_classified": is_classified, "real_pos_num": real_pos_num, 
-                "pos": display_pos, "qualy_pos": q_pos, "qualy_time": q_time_str,
-                "qualy_time_ms": q_info['time_ms'] if q_info else None, 
+                "pid": pid, "car_class": c_class, "is_classified": is_classified, 
+                "real_pos_num": real_pos_num, "pos": display_pos, 
+                "qualy_pos": q_pos, "qualy_time": q_time_str, "qualy_time_ms": q_info['time_ms'] if q_info else None, 
                 "qualy_gap": q_gap_str, "qualy_gap_ms": q_gap_ms, "net_vs_q": net_vs_q,
                 "name": name, "car_model": car_model, "points": points,
                 "laps": laps if is_classified else "-", "incidents": incidents, 
@@ -342,14 +334,15 @@ def load_and_process():
                 "has_valid_pace_gap": has_valid_pace_gap, "gap_pace": gap_pace_str,
                 "best_lap": format_time(best_lap) if is_classified and best_lap < 2000000000 else "-",
                 "best_lap_ms": best_lap if is_classified and best_lap < 2000000000 else None,
-                "gap_best": gap_best_str,
-                "penalty": penalty_applied,
-                "race_gap": race_gap_str # Pasamos el Gap de carrera calculado
+                "gap_best": gap_best_str, "penalty": penalty_applied, "race_gap": race_gap_str
             })
 
-        valid_paces = [d for d in temp_drivers if d['avg_lap_ms'] is not None and d['is_classified']]
-        valid_paces.sort(key=lambda x: x['avg_lap_ms'])
-        for i, d in enumerate(valid_paces): d['pace_pos'] = i + 1
+        # ORDENAR RITMOS POR CLASE
+        for cls in ["GT3", "GT4"]:
+            valid_paces = [d for d in temp_drivers if d['avg_lap_ms'] is not None and d['is_classified'] and d['car_class'] == cls]
+            valid_paces.sort(key=lambda x: x['avg_lap_ms'])
+            for i, d in enumerate(valid_paces): d['pace_pos'] = i + 1
+        
         for d in temp_drivers:
             if 'pace_pos' not in d: d['pace_pos'] = "-"
 
@@ -358,14 +351,16 @@ def load_and_process():
         
         for d in temp_drivers:
             pid = d['pid']
+            c_class = d['car_class']
             
             if pid not in global_drivers:
                 global_drivers[pid] = {
-                    "name": d['name'], "cars": {}, "total_points": 0, "races": 0,
-                    "pos_sum": 0, "pos_count": 0, "pace_pos_sum": 0, "pace_pos_count": 0,
-                    "pos_gained_vs_pace": 0, "gap_pace_sum_ms": 0, "gap_count": 0,
-                    "qualy_pos_sum": 0, "qualy_pos_count": 0, 
-                    "qualy_gap_sum_ms": 0, "qualy_gap_count": 0, "net_pos_gained_vs_qualy": 0
+                    "name": d['name'], "car_class": c_class, "cars": {}, 
+                    "total_points": 0, "races": 0, "pos_sum": 0, "pos_count": 0, 
+                    "pace_pos_sum": 0, "pace_pos_count": 0, "pos_gained_vs_pace": 0, 
+                    "gap_pace_sum_ms": 0, "gap_count": 0, "qualy_pos_sum": 0, 
+                    "qualy_pos_count": 0, "qualy_gap_sum_ms": 0, "qualy_gap_count": 0, 
+                    "net_pos_gained_vs_qualy": 0
                 }
             
             if d['is_classified']:
@@ -395,8 +390,9 @@ def load_and_process():
 
             if d['qualy_pos'] != "-":
                 qualy_results_export.append({
-                    "pos": d['qualy_pos'], "name": d['name'], "car_model": d['car_model'],
-                    "best_lap": d['qualy_time'], "gap_pole": d['qualy_gap'], "gap_pole_ms": d['qualy_gap_ms']
+                    "pos": d['qualy_pos'], "name": d['name'], "car_class": c_class,
+                    "car_model": d['car_model'], "best_lap": d['qualy_time'], 
+                    "gap_pole": d['qualy_gap'], "gap_pole_ms": d['qualy_gap_ms']
                 })
 
             del d['pid']
@@ -405,7 +401,7 @@ def load_and_process():
             del d['has_valid_pace_gap']
             session_results.append(d)
 
-        qualy_results_export.sort(key=lambda x: x['pos'])
+        qualy_results_export.sort(key=lambda x: (x['car_class'], x['pos']))
 
         session_list.append({
             "id": f"race_{file_index}",
@@ -430,6 +426,7 @@ def load_and_process():
 
         final_ranking.append({
             "name": data["name"],
+            "car_class": data["car_class"], # EXPORTAMOS LA CLASE
             "favorite_car": favorite_car_id,
             "points": data["total_points"],
             "avg_points": round(avg_points, 2),
@@ -445,9 +442,11 @@ def load_and_process():
     
     final_ranking.sort(key=lambda x: (-x["points"], float(x["avg_gap"].replace('+', '')) if x["avg_gap"] != "-" else 2000000000))
 
+    # LIMPIEZA DE HOF
     for track, record in hall_of_fame.items():
-        if record["qualy"]["time_ms"] == 2000000000: record["qualy"]["time_ms"] = None
-        if record["race"]["time_ms"] == 2000000000: record["race"]["time_ms"] = None
+        for cls in ["GT3", "GT4"]:
+            if record[cls]["qualy"]["time_ms"] == 2000000000: record[cls]["qualy"]["time_ms"] = None
+            if record[cls]["race"]["time_ms"] == 2000000000: record[cls]["race"]["time_ms"] = None
 
     mega_json = {
         "global": final_ranking,
