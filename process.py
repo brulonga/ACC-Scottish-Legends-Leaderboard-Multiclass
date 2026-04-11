@@ -9,6 +9,11 @@ OUTPUT_FILE = "dashboard_data.json"
 
 PENALTIES = {
     "nurburgring_24h": {
+    },
+    "brands_hatch": {
+        "Málnási Dániel": 15,
+        "Tommi Pommi": 5,
+        "Gael Duchêne ESP [SL]": 5,
     }
 }
 
