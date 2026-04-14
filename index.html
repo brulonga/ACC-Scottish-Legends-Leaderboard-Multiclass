@@ -19,6 +19,7 @@
         .text-small { font-size: 0.85em; color: #6c757d; }
         .sortable { cursor: pointer; user-select: none; transition: background 0.2s; }
         .sortable:hover { background-color: #3b4248 !important; }
+        .sort-icon { font-size: 0.8em; margin-left: 5px; color: #adb5bd; }
         .driver-link { cursor: pointer; color: #0d6efd; text-decoration: none; transition: 0.2s; }
         .driver-link:hover { text-decoration: underline; color: #0a58ca; }
         
@@ -81,7 +82,9 @@
         </div>
         <div class="mt-4 text-muted text-small">
             <p class="mb-1">* <strong>Net vs Qualy / Pace:</strong> Total positions gained or lost across the season vs starting grid / theoretical pace.</p>
-            <p class="mb-1">* To be classified, drivers must complete at least 50% of the class leader's laps. Drivers below 50% (DNF) are excluded from these standings.</p>
+            <p class="mb-1">* To be classified and receive points, drivers must complete at least <strong>90%</strong> of the class leader's laps.</p>
+            <p class="mb-1">* Drivers completing between 50% and 89% are classified as <strong>DNF</strong>. They receive no points and do not drop their Avg Pos, but retain pace telemetry.</p>
+            <p class="mb-1">* Nürburgring 24h race is excluded from 'Avg Gap' stats due to its unusually long lap time.</p>
         </div>
     </div>
 
@@ -164,12 +167,15 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover align-middle w-75 mx-auto text-center">
+                <table class="table table-hover align-middle w-100 text-center">
                     <thead class="table-secondary">
                         <tr>
                             <th>Pos</th>
                             <th class="text-start">Driver</th>
                             <th>Car</th>
+                            <th>Sector 1</th>
+                            <th>Sector 2</th>
+                            <th>Sector 3</th>
                             <th>Best Lap</th>
                             <th>Gap to Pole</th>
                         </tr>
@@ -295,8 +301,8 @@
 
 <script>
     let fullData = null;
-    let currentClass = 'GT3'; // EL ESTADO GLOBAL DE CATEGORÍA
-    let filteredGlobal = []; // La lista global filtrada por categoría actual
+    let currentClass = 'GT3'; 
+    let filteredGlobal = []; 
 
     let currentSort = { column: 'points', asc: false }; 
     let chartPosInstance, chartLapInstance, chartIncTimeInstance;
@@ -330,7 +336,7 @@
         .then(response => response.json())
         .then(data => {
             fullData = data;
-            applyClassFilter(); // Aplica el filtro inicial (GT3) y renderiza todo
+            applyClassFilter(); 
             initDropdown();
         })
         .catch(err => console.error("Error loading JSON:", err));
@@ -343,19 +349,16 @@
         return `${minutes}:${seconds.toString().padStart(2, '0')}.${milis.toString().padStart(3, '0')}`;
     }
 
-    // --- EL CORAZÓN DEL MULTICLASE ---
     function applyClassFilter() {
         currentClass = document.getElementById('classSelector').value;
         
-        // Filtrar datos globales por la clase seleccionada
         filteredGlobal = fullData.global.filter(d => d.car_class === currentClass);
         
-        // Refrescar la vista actual para que refleje la nueva clase
         document.getElementById('global-title').innerText = `${currentClass} Overall Standings`;
         document.getElementById('hof-title').innerText = `🏛️ ${currentClass} Hall of Fame`;
         document.getElementById('compare-title').innerText = `${currentClass} Head-to-Head Comparison`;
         
-        sortData(currentSort.column, true); // Forzar re-render de la tabla global
+        sortData(currentSort.column, true); 
         
         if (!document.getElementById('view-hof').classList.contains('d-none')) renderHallOfFame();
         if (!document.getElementById('view-compare').classList.contains('d-none')) openCompareSelection();
@@ -450,7 +453,6 @@
         tbody.innerHTML = "";
         
         for (const [trackId, data] of Object.entries(fullData.hall_of_fame)) {
-            // Accedemos a los récords de la categoría actual
             let classData = data[currentClass];
             if (!classData) continue;
 
@@ -504,7 +506,6 @@
         return history;
     }
 
-    // --- H2H COMPARISON LOGIC ---
     function openCompareSelection() {
         ['view-global', 'view-session', 'view-hof', 'view-driver'].forEach(v => document.getElementById(v).classList.add('d-none'));
         document.getElementById('view-compare').classList.remove('d-none');
@@ -514,7 +515,7 @@
         const sel2 = document.getElementById('comp-driver2');
         sel1.innerHTML = ""; sel2.innerHTML = "";
         
-        let drivers = [...filteredGlobal].sort((a,b) => a.name.localeCompare(b.name)); // Filtrados por clase
+        let drivers = [...filteredGlobal].sort((a,b) => a.name.localeCompare(b.name)); 
         
         drivers.forEach(d => {
             sel1.add(new Option(d.name, d.name));
@@ -710,7 +711,6 @@
         });
     }
 
-    // --- DRIVER PROFILE (Individual) ---
     function openDriverProfile(driverName, carClass) {
         ['view-global', 'view-session', 'view-hof', 'view-compare'].forEach(v => document.getElementById(v).classList.add('d-none'));
         document.getElementById('view-driver').classList.remove('d-none');
@@ -876,7 +876,6 @@
         log.innerHTML = totalMs === 0 ? `<div class="alert alert-success p-2 text-center">🏎️ Flawless Race! Zero incidents.</div>` : `<div class="alert alert-danger p-2 mb-2 shadow-sm text-center"><strong>Total Time Lost:</strong> +${(totalMs/1000).toFixed(2)}s</div>${html}`;
     }
 
-    // --- SESSION VIEW LOGIC ---
     function renderRaceCharts(filteredResults, filteredQualy) {
         const renderBar = (id, validDrivers, valFunc, labelFunc, isPoleFunc) => {
             const ctx = document.getElementById(id).getContext('2d');
@@ -894,14 +893,14 @@
             });
         };
 
-        let paceDrivers = filteredResults.filter(r => r.pos !== "DNF" && r.gap_pace_ms !== undefined).sort((a, b) => a.gap_pace_ms - b.gap_pace_ms);
+        let paceDrivers = filteredResults.filter(r => r.gap_pace_ms !== null && r.gap_pace_ms !== undefined).sort((a, b) => a.gap_pace_ms - b.gap_pace_ms);
         renderBar('chartRacePace', paceDrivers, d => d.gap_pace_ms/1000, ctx => ctx.raw===0?'PACE REF':`+${ctx.raw.toFixed(3)}s`, d => d.gap_pace_ms===0);
         
-        let bestDrivers = filteredResults.filter(r => r.pos !== "DNF" && r.gap_best_ms !== undefined).sort((a, b) => a.gap_best_ms - b.gap_best_ms);
+        let bestDrivers = filteredResults.filter(r => r.gap_best_ms !== null && r.gap_best_ms !== undefined).sort((a, b) => a.gap_best_ms - b.gap_best_ms);
         renderBar('chartRaceBest', bestDrivers, d => d.gap_best_ms/1000, ctx => ctx.raw===0?'BEST LAP':`+${ctx.raw.toFixed(3)}s`, d => d.gap_best_ms===0);
 
         if (filteredQualy && filteredQualy.length > 0) {
-            let qDrivers = filteredQualy.filter(r => r.gap_pole_ms !== undefined).sort((a, b) => a.gap_pole_ms - b.gap_pole_ms);
+            let qDrivers = filteredQualy.filter(r => r.gap_pole_ms !== undefined && r.gap_pole_ms !== null).sort((a, b) => a.gap_pole_ms - b.gap_pole_ms);
             renderBar('chartQualyGaps', qDrivers, d => d.gap_pole_ms/1000, ctx => ctx.raw===0?'POLE':`+${ctx.raw.toFixed(3)}s`, d => d.gap_pole_ms===0);
         }
     }
@@ -912,7 +911,6 @@
         
         switchSessionTab('race'); 
         
-        // FILTRAR POR CLASE ACTUAL
         const classResults = session.results.filter(r => r.car_class === currentClass);
         const classQualy = session.qualy_results ? session.qualy_results.filter(r => r.car_class === currentClass) : [];
         
@@ -957,17 +955,21 @@
                 const nameHtml = isGlobal ? `<span class="driver-link" onclick="openDriverProfile('${r.name}', '${currentClass}')">${r.name}</span>` : `<span class="text-muted fw-bold">${r.name}</span>`;
 
                 const styleGap = r.gap_pole === 'POLE' ? `<span class="badge badge-purple">POLE</span>` : (r.gap_pole.includes('+') ? `<span class="gap-plus">${r.gap_pole}</span>` : r.gap_pole);
+                
                 qBody.innerHTML += `
                     <tr>
                         <td class="fw-bold">${r.pos}</td>
                         <td class="fw-bold text-start">${nameHtml}</td>
                         <td><small class="text-muted">${carNames[r.car_model]||"Unknown"}</small></td>
+                        <td><small>${r.s1}</small></td>
+                        <td><small>${r.s2}</small></td>
+                        <td><small>${r.s3}</small></td>
                         <td class="fw-bold">${r.best_lap}</td>
                         <td>${styleGap}</td>
                     </tr>`;
             });
         } else {
-            qBody.innerHTML = `<tr><td colspan="5" class="text-muted">No Qualifying Data for ${currentClass}</td></tr>`;
+            qBody.innerHTML = `<tr><td colspan="8" class="text-muted">No Qualifying Data for ${currentClass}</td></tr>`;
         }
     }
 </script>
